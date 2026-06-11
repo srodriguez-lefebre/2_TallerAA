@@ -1,0 +1,15 @@
+{
+  "id": "santiagorod247/fat2019-sklearn-embedded-submission",
+  "title": "FAT2019 sklearn embedded submission",
+  "code_file": "fat2019_sklearn_embedded_submission.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": [
+    "freesound-audio-tagging-2019"
+  ],
+  "kernel_sources": []
+}
