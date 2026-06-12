@@ -74,6 +74,7 @@ def main() -> None:
 
     model = SmallLogmelCnn(
         num_classes=len(label_columns),
+        architecture=str(checkpoint.get("architecture", "standard")),
         activation=str(checkpoint.get("activation", "silu")),
         block_dropout=float(checkpoint.get("block_dropout", 0.0)),
         head_hidden=int(checkpoint.get("head_hidden", 0)),

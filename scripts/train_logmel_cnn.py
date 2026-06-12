@@ -47,10 +47,14 @@ class LogmelDataset(Dataset):
         targets: np.ndarray | None = None,
         *,
         augment: bool = False,
+        time_reverse_probability: float = 0.0,
+        contrast_strength: float = 0.0,
     ) -> None:
         self._images = images
         self._targets = targets
         self._augment = augment
+        self._time_reverse_probability = time_reverse_probability
+        self._contrast_strength = contrast_strength
 
     def __len__(self) -> int:
         return int(len(self._images))
@@ -58,25 +62,46 @@ class LogmelDataset(Dataset):
     def __getitem__(self, index: int):
         image = torch.from_numpy(self._images[index].astype(np.float32, copy=False)).unsqueeze(0)
         if self._augment:
-            image = _augment_image(image)
+            image = _augment_image(
+                image,
+                time_reverse_probability=self._time_reverse_probability,
+                contrast_strength=self._contrast_strength,
+            )
         if self._targets is None:
             return image
         target = torch.from_numpy(self._targets[index].astype(np.float32, copy=False))
         return image, target
 
 
-def _augment_image(image: torch.Tensor) -> torch.Tensor:
-    if torch.rand(()) < 0.5:
-        shift = int(torch.randint(-32, 33, ()).item())
-        image = torch.roll(image, shifts=shift, dims=2)
-    if torch.rand(()) < 0.5:
-        width = int(torch.randint(8, 48, ()).item())
-        start = int(torch.randint(0, max(1, image.shape[2] - width + 1), ()).item())
-        image[:, :, start : start + width] = 0.0
-    if torch.rand(()) < 0.5:
-        width = int(torch.randint(4, 16, ()).item())
-        start = int(torch.randint(0, max(1, image.shape[1] - width + 1), ()).item())
-        image[:, start : start + width, :] = 0.0
+def _scale_contrast(image: torch.Tensor, *, factor: float) -> torch.Tensor:
+    mean = image.mean()
+    return (image - mean) * factor + mean
+
+
+def _augment_image(
+    image: torch.Tensor,
+    *,
+    apply_spec_augment: bool = True,
+    time_reverse_probability: float = 0.0,
+    contrast_strength: float = 0.0,
+) -> torch.Tensor:
+    if time_reverse_probability > 0.0 and torch.rand(()) < time_reverse_probability:
+        image = image.flip(dims=(2,))
+    if contrast_strength > 0.0:
+        factor = float(torch.empty(()).uniform_(1.0 - contrast_strength, 1.0 + contrast_strength))
+        image = _scale_contrast(image, factor=factor)
+    if apply_spec_augment:
+        if torch.rand(()) < 0.5:
+            shift = int(torch.randint(-32, 33, ()).item())
+            image = torch.roll(image, shifts=shift, dims=2)
+        if torch.rand(()) < 0.5:
+            width = int(torch.randint(8, 48, ()).item())
+            start = int(torch.randint(0, max(1, image.shape[2] - width + 1), ()).item())
+            image[:, :, start : start + width] = 0.0
+        if torch.rand(()) < 0.5:
+            width = int(torch.randint(4, 16, ()).item())
+            start = int(torch.randint(0, max(1, image.shape[1] - width + 1), ()).item())
+            image[:, start : start + width, :] = 0.0
     return image
 
 
@@ -84,31 +109,99 @@ class HiddenLinear(nn.Linear):
     pass
 
 
+class DepthwiseSeparableConv(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        *,
+        activation: str,
+    ) -> None:
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Conv2d(
+                in_channels,
+                in_channels,
+                kernel_size=3,
+                padding=1,
+                groups=in_channels,
+                bias=False,
+            ),
+            nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(out_channels),
+            _activation_layer(activation),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.layers(x)
+
+
+class SeparableResidualBlock(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        *,
+        activation: str,
+    ) -> None:
+        super().__init__()
+        self.main = nn.Sequential(
+            DepthwiseSeparableConv(in_channels, out_channels, activation=activation),
+            DepthwiseSeparableConv(out_channels, out_channels, activation=activation),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+        )
+        self.residual = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=2, bias=False),
+            nn.BatchNorm2d(out_channels),
+        )
+        self.activation = _activation_layer(activation)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.activation(self.main(x) + self.residual(x))
+
+
 class SmallLogmelCnn(nn.Module):
     def __init__(
         self,
         num_classes: int,
         *,
+        architecture: str = "standard",
         activation: str = "silu",
         block_dropout: float = 0.0,
         head_hidden: int = 0,
         head_dropout: float = 0.35,
     ) -> None:
         super().__init__()
-        self.features = nn.Sequential(
-            _conv_block(1, 32, activation=activation, dropout=block_dropout),
-            nn.MaxPool2d(2),
-            _conv_block(32, 64, activation=activation, dropout=block_dropout),
-            nn.MaxPool2d(2),
-            _conv_block(64, 128, activation=activation, dropout=block_dropout),
-            nn.MaxPool2d(2),
-            _conv_block(128, 192, activation=activation, dropout=block_dropout),
-            nn.AdaptiveAvgPool2d((1, 1)),
-        )
+        if architecture == "standard":
+            feature_channels = 192
+            self.features = nn.Sequential(
+                _conv_block(1, 32, activation=activation, dropout=block_dropout),
+                nn.MaxPool2d(2),
+                _conv_block(32, 64, activation=activation, dropout=block_dropout),
+                nn.MaxPool2d(2),
+                _conv_block(64, 128, activation=activation, dropout=block_dropout),
+                nn.MaxPool2d(2),
+                _conv_block(128, 192, activation=activation, dropout=block_dropout),
+                nn.AdaptiveAvgPool2d((1, 1)),
+            )
+        elif architecture == "separable_residual":
+            feature_channels = 512
+            self.features = nn.Sequential(
+                nn.Conv2d(1, 64, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(64),
+                _activation_layer(activation),
+                SeparableResidualBlock(64, 128, activation=activation),
+                SeparableResidualBlock(128, 256, activation=activation),
+                SeparableResidualBlock(256, 384, activation=activation),
+                DepthwiseSeparableConv(384, feature_channels, activation=activation),
+                nn.AdaptiveAvgPool2d((1, 1)),
+            )
+        else:
+            raise ValueError(f"unknown architecture: {architecture}")
         if head_hidden > 0:
             self.classifier = nn.Sequential(
                 nn.Flatten(),
-                HiddenLinear(192, head_hidden, bias=False),
+                HiddenLinear(feature_channels, head_hidden, bias=False),
                 nn.BatchNorm1d(head_hidden),
                 _activation_layer(activation),
                 nn.Dropout(p=head_dropout),
@@ -118,7 +211,7 @@ class SmallLogmelCnn(nn.Module):
             self.classifier = nn.Sequential(
                 nn.Flatten(),
                 nn.Dropout(p=head_dropout),
-                nn.Linear(192, num_classes),
+                nn.Linear(feature_channels, num_classes),
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -247,10 +340,17 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--optimizer", choices=("adamw", "adam"), default="adamw")
     parser.add_argument("--initializer", choices=("default", "he_normal"), default="default")
+    parser.add_argument(
+        "--architecture",
+        choices=("standard", "separable_residual"),
+        default="standard",
+    )
     parser.add_argument("--activation", choices=("silu", "relu"), default="silu")
     parser.add_argument("--block-dropout", type=float, default=0.0)
     parser.add_argument("--head-hidden", type=int, default=0)
     parser.add_argument("--head-dropout", type=float, default=0.35)
+    parser.add_argument("--time-reverse-probability", type=float, default=0.0)
+    parser.add_argument("--contrast-strength", type=float, default=0.0)
     parser.add_argument(
         "--scheduler",
         choices=("cosine", "plateau", "multistep"),
@@ -363,7 +463,13 @@ def main() -> None:
     )
 
     train_loader = DataLoader(
-        LogmelDataset(x[train_indices], y[train_indices], augment=True),
+        LogmelDataset(
+            x[train_indices],
+            y[train_indices],
+            augment=True,
+            time_reverse_probability=args.time_reverse_probability,
+            contrast_strength=args.contrast_strength,
+        ),
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
@@ -392,10 +498,15 @@ def main() -> None:
         raise ValueError("head_dropout must be in [0, 1)")
     if args.head_hidden < 0:
         raise ValueError("head_hidden must be non-negative")
+    if not 0.0 <= args.time_reverse_probability <= 1.0:
+        raise ValueError("time_reverse_probability must be in [0, 1]")
+    if not 0.0 <= args.contrast_strength <= 1.0:
+        raise ValueError("contrast_strength must be in [0, 1]")
     lr_milestones = parse_lr_milestones(args.lr_milestones)
 
     model = SmallLogmelCnn(
         num_classes=len(label_columns),
+        architecture=args.architecture,
         activation=args.activation,
         block_dropout=args.block_dropout,
         head_hidden=args.head_hidden,
@@ -467,10 +578,13 @@ def main() -> None:
                     "frames": args.frames,
                     "full_train": True,
                     "initializer": args.initializer,
+                    "architecture": args.architecture,
                     "activation": args.activation,
                     "block_dropout": args.block_dropout,
                     "head_hidden": args.head_hidden,
                     "head_dropout": args.head_dropout,
+                    "time_reverse_probability": args.time_reverse_probability,
+                    "contrast_strength": args.contrast_strength,
                 },
                 best_model_path,
             )
@@ -509,10 +623,13 @@ def main() -> None:
                     "frames": args.frames,
                     "full_train": False,
                     "initializer": args.initializer,
+                    "architecture": args.architecture,
                     "activation": args.activation,
                     "block_dropout": args.block_dropout,
                     "head_hidden": args.head_hidden,
                     "head_dropout": args.head_dropout,
+                    "time_reverse_probability": args.time_reverse_probability,
+                    "contrast_strength": args.contrast_strength,
                 },
                 best_model_path,
             )
@@ -553,10 +670,13 @@ def main() -> None:
                 "test_size": args.test_size,
                 "full_train": args.full_train,
                 "initializer": args.initializer,
+                "architecture": args.architecture,
                 "activation": args.activation,
                 "block_dropout": args.block_dropout,
                 "head_hidden": args.head_hidden,
                 "head_dropout": args.head_dropout,
+                "time_reverse_probability": args.time_reverse_probability,
+                "contrast_strength": args.contrast_strength,
                 "optimizer": args.optimizer,
                 "scheduler": args.scheduler,
                 "lr_milestones": lr_milestones,

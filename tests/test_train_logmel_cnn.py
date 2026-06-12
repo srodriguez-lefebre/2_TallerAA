@@ -8,6 +8,49 @@ except ModuleNotFoundError:
 
 @unittest.skipUnless(torch is not None, "torch is only installed in the project virtualenv")
 class TrainLogmelCnnTests(unittest.TestCase):
+    def test_model_supports_separable_residual_architecture(self) -> None:
+        from scripts.train_logmel_cnn import SmallLogmelCnn
+
+        model = SmallLogmelCnn(
+            num_classes=4,
+            architecture="separable_residual",
+            activation="relu",
+        )
+        output = model(torch.randn(2, 1, 128, 512))
+        depthwise_convolutions = [
+            module
+            for module in model.modules()
+            if isinstance(module, torch.nn.Conv2d)
+            and module.groups == module.in_channels
+            and module.in_channels > 1
+        ]
+
+        self.assertEqual(tuple(output.shape), (2, 4))
+        self.assertGreaterEqual(len(depthwise_convolutions), 4)
+
+    def test_time_reversal_only_flips_frame_axis(self) -> None:
+        from scripts.train_logmel_cnn import _augment_image
+
+        image = torch.arange(12, dtype=torch.float32).reshape(1, 3, 4)
+        augmented = _augment_image(
+            image.clone(),
+            apply_spec_augment=False,
+            time_reverse_probability=1.0,
+        )
+
+        torch.testing.assert_close(augmented, image.flip(dims=(2,)))
+
+    def test_contrast_scaling_preserves_mean_and_shape(self) -> None:
+        from scripts.train_logmel_cnn import _scale_contrast
+
+        image = torch.arange(12, dtype=torch.float32).reshape(1, 3, 4)
+        augmented = _scale_contrast(image, factor=1.5)
+
+        self.assertEqual(tuple(augmented.shape), tuple(image.shape))
+        self.assertTrue(torch.isfinite(augmented).all())
+        torch.testing.assert_close(augmented.mean(), image.mean())
+        self.assertGreater(float(augmented.std()), float(image.std()))
+
     def test_apply_he_initialization_resets_supported_layers(self) -> None:
         from scripts.train_logmel_cnn import SmallLogmelCnn, apply_he_initialization
 
