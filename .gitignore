@@ -126,6 +126,6 @@ mlruns/
 Thumbs.db
 desktop.ini
 
-.csv
-.json
-.pdf
+*.csv
+*.json
+*.pdf
