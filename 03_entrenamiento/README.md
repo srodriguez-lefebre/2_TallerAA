@@ -31,6 +31,9 @@ Artefactos de decision:
 - `training_results.csv`: corridas frescas e historicas con `valid_lwlrap`,
   artefactos y decision.
 - `runs/`: artefactos livianos generados por corridas frescas de la entrega.
+- `results/`: tablas y figuras generadas por el notebook para explicar familias
+  de modelos, corridas frescas, evidencia historica, decisiones y escalera de
+  mejora.
 
 Documentacion humana consolidada:
 

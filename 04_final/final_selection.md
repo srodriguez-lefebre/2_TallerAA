@@ -6,17 +6,17 @@ Dejar trazable que entra al pipeline final y por que. Esta seleccion no reemplaz
 la corrida final, pero fija el contrato metodologico: ningun componente entra sin
 evidencia, soporte teorico o rol claro en el ensemble.
 
-## Componentes seleccionados
+## Componentes seleccionados para la entrega
 
 | Componente | Rol | Motivo |
 |---|---|---|
-| `sklearn_logmel_c001` | diversidad tabular | baseline regularizado, barato y con errores distintos |
-| `head256_relu_cnn` | rama neural principal | mejora fuerte con He, scheduler y cabeza densa |
 | `separable_headsep` | diversidad arquitectonica | convoluciones separables/residuales justificadas por curso |
-| `resnet50_frozen` | transfer/blend-only | debil solo, pero aporta diversidad al blend |
 | `globalmel_sep_temporal` | normalizacion global mel | mejora de preprocesamiento defendible |
-| `sepres_se_head256` | atencion por canales | aporta en el ensamble final aunque no gane solo |
-| `sep_temporal_f1024` | contexto temporal largo | mejor rama nueva de la ronda teorica |
+| `sep_temporal_f1024` | contexto temporal largo | aporta una escala temporal distinta sin agregar otro ensemble |
+
+Componentes historicos como `sklearn`, `head256`, `resnet50` y `sepres_se` quedan
+documentados como evidencia de investigacion, pero no entran en el CSV final de
+presentacion porque aumentan el conteo real del ensemble.
 
 ## Artefactos candidatos validados
 
@@ -24,16 +24,18 @@ evidencia, soporte teorico o rol claro en el ensemble.
 |---|---|---|
 | `investigation/kaggle_dataset_download_headsep_conservative/submission.csv` | formato valido; Kaggle private `0.65061` | `00e9c359a402f12880a239ca627133fa752d6f14f0995f5d029e1a45e8713a98` |
 | `investigation/kaggle_dataset_download_headsep_translated/submission.csv` | formato valido; Kaggle private `0.65289` | `17eea377cd4ae277029c5215f657381ccb6f1204d4de0b43cfce7a704ff24f9b` |
-| `investigation/results/submissions/current475_globalmel200_se125_f1024_200.csv` | formato valido; Kaggle private `0.67025` | `e17afe43a164809a6c7cc4ad5ba419c029f01f779cc8bc41759584b14eea5644` |
+| `investigation/results/submissions/simple_headsep_globalmel_f1024_equal.csv` | formato valido; Kaggle private `0.66649`; seleccionado | `81ce2b49e836ca89b27e07b2f281eebce3efc103d223c29aa6a3731b7659be9b` |
+| `investigation/results/submissions/simple_sepres_headsep_globalmel_f1024_equal.csv` | formato valido; Kaggle private `0.66597` | `3d5dbe6c660426bdadb40ed662fd1d0d8028f49c435b93b8adffb415319f768e` |
+| `investigation/results/submissions/current475_globalmel200_se125_f1024_200.csv` | mejor historico expandido; Kaggle private `0.67025`; no seleccionado para presentacion | `e17afe43a164809a6c7cc4ad5ba419c029f01f779cc8bc41759584b14eea5644` |
 
 Seleccion actual:
 
 - `04_final/submission.csv` queda copiado desde
-  `investigation/results/submissions/current475_globalmel200_se125_f1024_200.csv`.
+  `investigation/results/submissions/simple_headsep_globalmel_f1024_equal.csv`.
 - La seleccion se basa en la consulta de Kaggle:
   `kaggle competitions submissions -c freesound-audio-tagging-2019`.
-- La fila usada fue `current475 globalmel200 se125 f1024_200`, enviada el
-  `2026-06-29 09:58:43`, con private score `0.67025`.
+- La fila usada fue `simple current-free headsep globalmel f1024 equal`, enviada
+  el `2026-07-01 19:13:14`, con private score `0.66649`.
 - El `publicScore` que devuelve Kaggle es `0.00000` para estas submissions, por
   lo que no se usa como criterio de seleccion.
 
@@ -44,7 +46,7 @@ Equivalencias locales verificadas:
 - `kaggle_dataset_download_headsep_translated/submission.csv` coincide con
   `investigation/submissions/catsdogs_headsep_final/translated_local.csv`.
 - `04_final/submission.csv` coincide con
-  `investigation/results/submissions/current475_globalmel200_se125_f1024_200.csv`.
+  `investigation/results/submissions/simple_headsep_globalmel_f1024_equal.csv`.
 
 Validado contra `data/sample_submission.csv`:
 
@@ -79,14 +81,16 @@ Resultados Kaggle principales:
 
 | Candidato | Private LB | Decision |
 |---|---:|---|
-| `current475_globalmel200_se125_f1024_200` | `0.67025` | `selected_final` |
+| `current475_globalmel200_se125_f1024_200` | `0.67025` | `historical_best_expanded` |
 | `current550_globalmel250_f1024_200` | `0.66996` | `keep` |
+| `simple_headsep_globalmel_f1024_equal` | `0.66649` | `selected_final` |
+| `simple_sepres_headsep_globalmel_f1024_equal` | `0.66597` | `keep` |
 | `current645_globalmel_sep_temporal_full355` | `0.66561` | `keep` |
 | `current575_globalmel300_se125` | `0.66519` | `blend-only` |
 | `current835_sep_temporal_mcdrop20_full165` | `0.65965` | `blend-only` |
 | `current835_sep_temporal_tta1024_full165` | `0.65835` | `discard` |
 
-La nueva final es:
+La final con mayor score historico era:
 
 ```text
 0.475 * current
@@ -95,9 +99,18 @@ La nueva final es:
 + 0.200 * sep_temporal_f1024
 ```
 
-Lectura: la mejora no viene de un truco aislado, sino de combinar tres ideas
-defendibles: normalizacion global por banda mel, atencion por canales y mayor
-contexto temporal.
+Pero `current` se expande en siete piezas anteriores. Por eso la final de
+presentacion pasa a ser:
+
+```text
+1/3 * separable_headsep
++ 1/3 * globalmel_sep_temporal
++ 1/3 * sep_temporal_f1024
+```
+
+Lectura: se pierde `0.00376` de private LB contra el mejor historico
+(`0.67025 -> 0.66649`), pero se obtiene una explicacion mucho mas limpia:
+soft voting de tres modelos log-mel diversos.
 
 ### Candidatos previos superados
 
@@ -145,17 +158,17 @@ Chequeo 2026-06-28 10:20 America/Montevideo:
 
 ## Narrativa defendible
 
-La evolucion del sistema final se explica por cuatro decisiones:
+La evolucion del sistema final se explica por cinco decisiones:
 
 1. Pasar de priors a features log-mel para usar informacion acustica real.
 2. Pasar de estadisticas globales a CNN sobre espectrogramas para preservar
    estructura tiempo-frecuencia.
 3. Mejorar el entrenamiento neural con inicializacion, scheduler, BatchNorm,
    dropout y cabeza densa.
-4. Combinar familias con errores distintos: sklearn, CNN head256, separable
-   residual y transfer congelado.
-5. Refinar preprocesamiento y contexto temporal: normalizacion global por banda
-   mel y ventana temporal de 1024 frames.
+4. Combinar familias con errores distintos durante la investigacion para medir
+   diversidad real.
+5. Refinar la entrega hacia un ensemble chico: separable residual fuerte,
+   normalizacion global por banda mel y ventana temporal de 1024 frames.
 
 Los pesos exactos del blend deben reportarse como seleccion empirica si vienen
 de barridos contra validacion/Kaggle. La justificacion fuerte es la diversidad y
@@ -165,10 +178,10 @@ la evidencia de mejora, no que un peso particular sea teoricamente especial.
 
 Para cerrar el pipeline final de forma reproducible:
 
-1. Mantener `04_final/submission.csv` como artefacto final elegido con private
-   LB `0.67025`, salvo que un nuevo experimento de `investigation/results/`
+1. Mantener `04_final/submission.csv` como artefacto final defendible con private
+   LB `0.66649`, salvo que un nuevo experimento simple de `investigation/results/`
    supere este score con evidencia comparable.
-2. Completar los pesos exactos del blend si se necesita reconstruir la submission
-   desde cero y no solo entregar el CSV validado.
+2. Usar el candidato `0.67025` solo como referencia de mejor score historico
+   expandido, no como final de presentacion.
 3. Ejecutar el notebook `04_final/01_pipeline_final.ipynb` y dejar la validacion
    de formato en verde.
