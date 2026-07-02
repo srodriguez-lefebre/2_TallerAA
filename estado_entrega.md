@@ -2,24 +2,35 @@
 
 Este archivo resume la auditoria de cumplimiento del objetivo actual.
 
+La politica vigente es la de `100. Entregable`: la entrega principal debe ser
+simple, reproducible y defendible. El mejor score historico se conserva como
+referencia, pero no reemplaza a la seleccion de presentacion si depende de un
+ensemble anidado dificil de explicar.
+
 ## Requisitos y evidencia
 
 | Requisito | Evidencia actual | Estado |
 |---|---|---|
 | Leer consigna del Proyecto 2 | `roadmap.md` resume audio tagging multi-label, log-mel/MFCC y `lwlrap` desde `docs/proyecto_2_audio.pdf` y `docs/proyecto_2_freesound.pdf` | cumplido |
-| Usar menos carpetas que Taller 1 | estructura reducida: `01_analisis_datos/`, `02_preprocesamiento/`, `03_entrenamiento/`, `04_final/` | cumplido |
-| Inspirarse en Taller 1 sin copiar su proliferacion | `roadmap.md` conserva el flujo problema -> datos -> preprocesamiento -> modelos -> final, comprimido en cuatro bloques | cumplido |
+| Usar menos carpetas que Taller 1 | flujo comprimido en `01_analisis_datos/`, `02_preprocesamiento/`, `03_entrenamiento/`, `04_final/` y cierre en `100. Entregable/` | cumplido |
+| Inspirarse en Taller 1 sin copiar su proliferacion | `100. Entregable/00_pipeline_entregable.ipynb` sigue el estilo de notebook final autonomo: datos, configuracion, preprocesamiento, modelo, blend y validacion | cumplido |
 | Revisar `investigation/` y promover solo ideas defendibles | `03_entrenamiento/decision_matrix.csv` separa `keep`, `blend-only`, `discard` y `reference` | cumplido |
-| Usar material del curso como soporte | `roadmap.md` y `decision_matrix.csv` conectan CNN, regularizacion, BatchNorm, dropout, scheduler, transfer y ensembles con los PDFs/libro del curso | cumplido |
-| Incorporar experimentos nuevos de `investigation/results/` | `investigation/results/README.md`, `experiment_log.csv` y `theory_supported_experiments_2026_06_29.md` registran la mejora final | cumplido |
-| Entrenar modelos planteados para la entrega | `03_entrenamiento/training_results.csv` registra sklearn, CNN estandar, CNN head256 y separable-residual frescos | cumplido |
-| Revisar mejoras nuevas de `investigation/results/` | `theory_supported_experiments_2026_06_29.md` sube la mejor Kaggle a `0.67025` | cumplido |
-| No tocar Kaggle del curso | `README.md`, `roadmap.md` y `04_final/01_pipeline_final.ipynb` limitan submissions al desafio publico `freesound-audio-tagging-2019` | cumplido |
-| Dejar pipeline final y submission validada | `04_final/submission.csv`, `final_pipeline_manifest.csv`, `submission_candidates.csv`, `final_pipeline_metadata.json` y `final_selection.md` | cumplido |
+| Usar material del curso como soporte | `roadmap.md`, `decision_matrix.csv` y las fichas de `100. Entregable/componentes/` conectan CNN, regularizacion, BatchNorm, dropout, scheduler, normalizacion y ensembles con el curso | cumplido |
+| Incorporar experimentos nuevos de `investigation/results/` | `investigation/results/README.md`, `experiment_log.csv` y `theory_supported_experiments_2026_06_29.md` registran los candidatos finales | cumplido |
+| Entrenar modelos planteados para la entrega | `03_entrenamiento/training_results.csv` registra baselines y modelos neurales; `100. Entregable/componentes/` fija las tres ramas finales | cumplido |
+| Revisar mejoras nuevas de `investigation/results/` | el candidato `0.67025` queda como mejor historico expandido; no se selecciona como entrega porque contiene el ensemble anidado `current` | cumplido |
+| No tocar Kaggle del curso | `README.md`, `roadmap.md`, `04_final/01_pipeline_final.ipynb` y `100. Entregable/00_pipeline_entregable.ipynb` limitan submissions al desafio publico `freesound-audio-tagging-2019` | cumplido |
+| Dejar pipeline final y submission validada | `100. Entregable/00_pipeline_entregable.ipynb`, `100. Entregable/submission.csv`, `04_final/submission.csv`, `final_pipeline_manifest.csv`, `submission_candidates.csv`, `final_pipeline_metadata.json` y `final_selection.md` | cumplido |
 
 ## Decision final actual
 
-La submission seleccionada es:
+La submission de presentacion es:
+
+```text
+100. Entregable/submission.csv
+```
+
+Debe coincidir byte a byte con el artefacto auditado:
 
 ```text
 04_final/submission.csv
@@ -28,16 +39,39 @@ La submission seleccionada es:
 Origen:
 
 ```text
-investigation/results/submissions/current475_globalmel200_se125_f1024_200.csv
+investigation/results/submissions/simple_headsep_globalmel_f1024_equal.csv
+```
+
+Formula:
+
+```text
+1/3 * separable_headsep
++ 1/3 * globalmel_sep_temporal
++ 1/3 * sep_temporal_f1024
 ```
 
 Evidencia:
 
-- SHA-256: `e17afe43a164809a6c7cc4ad5ba419c029f01f779cc8bc41759584b14eea5644`;
-- coincide byte a byte con `investigation/results/submissions/current475_globalmel200_se125_f1024_200.csv`;
-- Kaggle private score: `0.67025`;
-- descripcion Kaggle: `current475 globalmel200 se125 f1024_200`;
+- SHA-256: `81ce2b49e836ca89b27e07b2f281eebce3efc103d223c29aa6a3731b7659be9b`;
+- coincide con `investigation/results/submissions/simple_headsep_globalmel_f1024_equal.csv`;
+- Kaggle private score: `0.66649`;
+- descripcion Kaggle: `simple current-free headsep globalmel f1024 equal`;
 - competencia: `freesound-audio-tagging-2019`.
+
+## Referencia historica
+
+El mejor score historico expandido sigue siendo:
+
+```text
+investigation/results/submissions/current475_globalmel200_se125_f1024_200.csv
+```
+
+con private LB `0.67025`.
+
+No se usa como entrega principal porque su formula contiene `current`, que se
+expande a varias ramas previas. Para la presentacion se prioriza un soft vote
+directo de tres componentes reales, con una perdida pequena de leaderboard
+frente a una explicacion mucho mas limpia.
 
 ## Validaciones ejecutadas
 
@@ -45,16 +79,23 @@ Evidencia:
 python 04_final/validate_final_artifacts.py
 ```
 
-Resultado: `final_validation_ok`.
+Resultado esperado: `final_validation_ok`.
+
+```bash
+jupyter nbconvert --execute --inplace "100. Entregable/00_pipeline_entregable.ipynb"
+```
+
+Resultado esperado: se reconstruye `100. Entregable/submission.csv` en modo
+seguro, sin reentrenar ramas largas.
 
 ```bash
 cd investigation
 python -m unittest tests.test_train_logmel_cnn
 ```
 
-Resultado: `11 tests OK`.
+Resultado historico: `11 tests OK`.
 
-Tambien se ejecutaron los notebooks principales de entrega:
+Tambien se ejecutaron los notebooks principales de trabajo:
 
 - `01_analisis_datos/01_analisis_datos.ipynb`;
 - `02_preprocesamiento/00_C00_base_audio.ipynb`;
@@ -65,51 +106,14 @@ Tambien se ejecutaron los notebooks principales de entrega:
 - `03_entrenamiento/01_baselines_y_modelos.ipynb`;
 - `04_final/01_pipeline_final.ipynb`.
 
-Resultado: notebooks ejecutados y guardados con outputs.
+## Criterio para cambios futuros
 
-## Pendiente normal de trabajo
+Una nueva idea de `investigation/results/` solo reemplaza la entrega si cumple
+las dos condiciones:
 
-La entrega actual tiene una final Kaggle-verificada:
+1. mejora o empata de forma razonable el private LB de `0.66649`;
+2. mantiene una explicacion comparable de presentacion: pocas ramas reales,
+   pesos defendibles y sin esconder ensembles anidados.
 
-```text
-04_final/submission.csv
-```
-
-La ronda anterior dejo un candidato intermedio:
-
-```text
-investigation/results/submissions/current85_sep_temporal_full15.csv
-```
-
-Ese candidato tiene mejora local estimada (`0.841179 -> 0.846742`) y formato
-validado, pero todavia no reemplaza a la final porque falta score de Kaggle. La
-API directa rechazo la subida con:
-
-```text
-Submission not allowed: This competition only accepts Submissions from Notebooks.
-```
-
-El siguiente paso operativo es medir ese CSV desde un Notebook de Kaggle, igual
-que las submissions historicas.
-
-Revision 2026-06-28 10:20 America/Montevideo:
-
-- el kernel `santiagorod247/fat2019-current85-sep-temporal-full15-copy` esta
-  `COMPLETE`;
-- su output `submission.csv` coincide byte a byte con el candidato local;
-- Kaggle todavia no muestra score para ese candidato en la tabla de submissions;
-- en ese chequeo, la mejor submission evaluada seguia siendo `0.65289`;
-- aparecio una mejora local nueva, `geron_ensemble_search`, con mejor candidato
-  `investigation/results/submissions/current_rowz205_rowrank190_avg.csv` y
-  `valid_lwlrap=0.848191` en la reconstruccion local;
-- ese candidato quedaba como `candidate_needs_kaggle_notebook`, no como final.
-
-Revision 2026-06-29:
-
-- `current85_sep_temporal_full15` fue evaluado y dio private LB `0.65848`;
-- `current835_sep_temporal_full165` mejoro a `0.65928`;
-- la ronda teorica agrego normalizacion global mel, squeeze-and-excitation y
-  ventana temporal 1024;
-- mejor resultado actual: `current475_globalmel200_se125_f1024_200`, private LB
-  `0.67025`;
-- `04_final/submission.csv` fue actualizado a esa submission.
+Si solo mejora el score usando una mezcla grande, queda como referencia
+historica o como candidato de investigacion, no como entrega principal.

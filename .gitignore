@@ -129,3 +129,6 @@ desktop.ini
 *.csv
 *.json
 *.pdf
+
+# Entregable final versionable
+!100. Entregable/submission.csv

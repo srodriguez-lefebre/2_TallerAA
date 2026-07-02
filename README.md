@@ -4,7 +4,8 @@ Proyecto academico para Freesound Audio Tagging 2019.
 
 El laboratorio historico vive en `investigation/`. La entrega nueva se organiza
 en menos etapas, con notebooks y decisiones justificadas por la consigna, el
-material del curso y la evidencia de los experimentos previos.
+material del curso y la evidencia de los experimentos previos. La superficie
+final de presentacion esta en `100. Entregable/`.
 
 ## Estructura de trabajo
 
@@ -14,8 +15,10 @@ material del curso y la evidencia de los experimentos previos.
   log-mel, MFCC y caches reutilizables.
 - `03_entrenamiento/`: baselines, CNNs, busqueda controlada de mejoras,
   validacion y comparacion contra `investigation/`.
-- `04_final/`: pipeline final, pesos de blend elegidos y validacion de
+- `04_final/`: auditoria de seleccion, pesos de blend elegidos y validacion de
   submission.
+- `100. Entregable/`: notebook unico de entrega, con modo seguro para
+  reconstruir el CSV final sin reentrenar modelos largos.
 - `estado_entrega.md`: auditoria corta de requisitos, evidencia y validaciones
   ejecutadas.
 - `decisiones_config_y_proceso.md`: explicacion consolidada de cada decision de
