@@ -18,7 +18,7 @@ audio .wav
 Artefacto usado:
 
 ```text
-investigation/submissions/theory_sep_temporal_f1024_full_e40_seed42/small_logmel_cnn.csv
+investigation/submissions/parallel100_20260702_sep_temporal_f1024_e100_seed42/small_logmel_cnn.csv
 ```
 
 ## Idea principal
@@ -164,7 +164,7 @@ head_dropout: 0.3
 optimizer: adamw
 scheduler: multistep
 lr_milestones: 19,25
-epochs: 40
+epochs: 100
 batch_size: 12
 seed: 42
 full_train: true
@@ -178,7 +178,7 @@ memoria.
 En el blend final:
 
 ```text
-1/3 * sep_temporal_f1024
+0.375 * sep_temporal_f1024_e100_seed42
 ```
 
 Su rol es aportar una escala temporal distinta. Esto mejora la diversidad del

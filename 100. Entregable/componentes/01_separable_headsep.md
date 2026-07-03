@@ -25,7 +25,7 @@ tiempo-frecuencia.
 Artefacto usado:
 
 ```text
-investigation/submissions/logmel_cnn_catsdogs_sepres_head256_full_e56_seed42/small_logmel_cnn.csv
+investigation/submissions/parallel100_20260702_separable_headsep_e100_seed42/small_logmel_cnn.csv
 ```
 
 ## Entrada: log-mel 128 x 512
@@ -243,7 +243,7 @@ head_hidden: 256
 head_dropout: 0.3
 optimizer: adam
 scheduler: multistep
-epochs: 56
+epochs: 100
 seed: 42
 full_train: true
 ```
@@ -255,7 +255,7 @@ Se entreno con todo `train_curated` para generar predicciones sobre el test.
 En el blend final:
 
 ```text
-1/3 * separable_headsep
+0.25 * separable_headsep_e100_seed42
 ```
 
 Su rol es aportar una vista convolucional fuerte. Es distinto a los otros dos

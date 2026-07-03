@@ -1,52 +1,65 @@
 # 03 - Entrenamiento
 
-Objetivo: seleccionar modelos y mejoras con evidencia, no por prueba aleatoria.
+Objetivo: explicar el entrenamiento del modelo final, no todo el historial de
+experimentos.
 
-Familias promovidas desde `investigation/`:
-
-- priors solo como smoke test de submission;
-- LogisticRegression One-vs-Rest sobre estadisticas log-mel;
-- LogisticRegression regularizada (`C` bajo) si mejora contra baseline;
-- CNN sobre imagenes log-mel con salida sigmoid y BCE;
-- mejoras de entrenamiento neural: inicializacion He, BatchNorm, dropout,
-  scheduler por plateau, early stopping y cabeza densa;
-- full-train y seed ensemble para configuraciones ya elegidas;
-- separable/residual y ResNet congelada solo como diversidad de blend.
-
-No promover sin advertencia:
-
-- calibracion por priors que rompa ranking;
-- noisy data concatenado sin control;
-- augmentations que bajan validacion;
-- micro-ajustes de pesos elegidos solo por leaderboard.
-
-Notebook:
+Notebook principal:
 
 - `01_baselines_y_modelos.ipynb`
 
-Artefactos de decision:
+Modelo final oficial:
 
-- `decision_matrix.csv`: tabla legible por notebooks con evidencia, soporte del
-  curso y decision.
-- `training_results.csv`: corridas frescas e historicas con `valid_lwlrap`,
-  artefactos y decision.
-- `runs/`: artefactos livianos generados por corridas frescas de la entrega.
-- `results/`: tablas y figuras generadas por el notebook para explicar familias
-  de modelos, corridas frescas, evidencia historica, decisiones y escalera de
-  mejora.
+```text
+0.25  * separable_headsep_e100_seed42
++ 0.375 * globalmel_sep_temporal_e100_seed42
++ 0.375 * sep_temporal_f1024_e100_seed42
+```
 
-Documentacion humana consolidada:
+Kaggle private LB: `0.67126`.
 
-- `decisiones_config_y_proceso.md` en la raiz explica las decisiones de proceso,
-  configuracion y descarte.
-- `investigation/results/` conserva el detalle vivo de experimentos nuevos.
+## Las tres ramas
 
-## Registro vivo
+| Rama | Entrada | Normalizacion | Arquitectura | Rol |
+|---|---|---|---|---|
+| `separable_headsep_e100_seed42` | log-mel `128 x 512` | por clip | CNN separable-residual + cabeza densa | patrones locales tiempo-frecuencia |
+| `globalmel_sep_temporal_e100_seed42` | log-mel `128 x 512` | global por banda mel | CNN separable-residual + BiGRU | escala estable y evolucion temporal |
+| `sep_temporal_f1024_e100_seed42` | log-mel `128 x 1024` | por clip | CNN separable-residual + BiGRU | contexto temporal largo |
 
-Antes de agregar o promover una mejora nueva, revisar `investigation/results/`.
-Esa carpeta concentra los experimentos que se vayan escribiendo a partir de
-ahora:
+## Por que 100 epocas
 
-- `experiment_log.csv`: tabla de corridas;
-- `<run_name>.md`: detalle, comando, resultado y conclusion;
-- `submissions/`: candidatos de submission.
+La ronda `parallel100_20260702` mostro que la misma idea simple seguia
+mejorando al entrenar mas:
+
+```text
+3-way original        0.66649
+3-way e100 equal      0.67055
+3-way e100 weighted   0.67126
+```
+
+La reponderacion final da menos peso a la rama puramente convolucional y mas a
+las dos ramas temporales.
+
+## Regularizacion del modelo final
+
+Las tres ramas usan `head_dropout=0.3`. En `separable_headsep` ese dropout esta
+en la cabeza densa de 256 unidades; en `globalmel_sep_temporal` y
+`sep_temporal_f1024` esta despues del pooling de la BiGRU temporal.
+
+Durante entrenamiento se aplica augmentation sobre el log-mel solo en train:
+desplazamiento temporal aleatorio, mascara temporal y mascara en frecuencia.
+Las opciones de invertir el tiempo y cambiar contraste existen en el script,
+pero en la corrida final quedaron apagadas (`0.0`).
+
+La regularizacion por peso depende del optimizador: las dos ramas temporales
+usan `AdamW`, por lo tanto toman el `weight_decay` por defecto `1e-4`; la rama
+`separable_headsep` usa `Adam`, y en el trainer actual `Adam` no aplica
+`weight_decay`. `block_dropout` y `early_stopping` existen como opciones, pero
+en la corrida final estan desactivados.
+
+## Que queda fuera de este notebook
+
+Los experimentos que no forman parte del entrenamiento final se separan en:
+
+- `04_experimentacion_camino/`
+- `05_experimentacion_general/`
+- `06_experimentacion_final/`

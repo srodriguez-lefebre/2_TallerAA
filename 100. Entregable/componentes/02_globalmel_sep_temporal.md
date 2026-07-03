@@ -24,7 +24,7 @@ audio .wav
 Artefacto usado:
 
 ```text
-investigation/submissions/theory_globalmel_sep_temporal_full_e40_seed42/small_logmel_cnn.csv
+investigation/submissions/parallel100_20260702_globalmel_sep_temporal_e100_seed42/small_logmel_cnn.csv
 ```
 
 ## Por que existe esta rama
@@ -205,7 +205,7 @@ head_dropout: 0.3
 optimizer: adamw
 scheduler: multistep
 lr_milestones: 25,39
-epochs: 40
+epochs: 100
 seed: 42
 full_train: true
 ```
@@ -238,7 +238,7 @@ La diferencia fuerte es:
 En el blend final:
 
 ```text
-1/3 * globalmel_sep_temporal
+0.375 * globalmel_sep_temporal_e100_seed42
 ```
 
 Su rol es aportar una vista temporal con entrada mejor estandarizada. Complementa

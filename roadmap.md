@@ -31,14 +31,18 @@ La consigna de Freesound agrega dos restricciones metodologicas importantes:
 ## Estructura reducida
 
 La estructura nueva reemplaza la proliferacion de carpetas numeradas del Taller 1
-por cuatro bloques:
+por ocho bloques de entrega:
 
 | Carpeta | Rol | Salida esperada |
 |---|---|---|
 | `01_analisis_datos/` | Entender datos, clases, splits y metrica | Notebook de EDA y conclusiones |
 | `02_preprocesamiento/` | Preparar features/caches de audio | Notebook de log-mel y artefactos |
-| `03_entrenamiento/` | Comparar modelos y mejoras defendibles | Notebooks de baseline, CNN y seleccion |
-| `04_final/` | Armar el sistema final reproducible | Notebook/pipeline final y submission |
+| `03_entrenamiento/` | Explicar el entrenamiento del modelo final | Notebook de ramas, pesos y regularizacion |
+| `04_experimentacion_camino/` | Resumir el camino hasta modelos fuertes | Evidencia de mejoras principales |
+| `05_experimentacion_general/` | Separar pruebas laterales y descartes | Experimentos no elegidos |
+| `06_experimentacion_final/` | Comparar variantes alrededor del modelo final | Reponderaciones, e100 y bagging |
+| `07_final/` | Fijar seleccion final y validar artefactos | Submission validada y validadores |
+| `100. Entregable/` | Pipeline reproducible de entrega | Notebook preparado y CSV final |
 
 `investigation/` queda como laboratorio historico y fuente de artefactos. No se
 borra ni se mezcla con la entrega ordenada.

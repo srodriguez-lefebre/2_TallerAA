@@ -20,9 +20,10 @@ Notebooks:
   tabular.
 - `02_P01_logmel_image_512.ipynb`: imagen log-mel `128 x 512` para CNN.
 - `03_P02_globalmel_y_f1024.ipynb`: normalizacion global mel y ventana temporal
-  `1024`, promovidas por la ronda nueva de `investigation/results/`.
+  `1024`, ideas que luego pasan a las ramas finales.
 - `10_p00vsp01vsp02.ipynb`: comparacion consolidada de las variantes y su
-  impacto en private LB.
+  impacto en private LB. La seleccion final vigente se decide despues, en
+  `06_experimentacion_final/` y `07_final/`.
 
 Orden recomendado: correr `00`, luego `01`, `02`, `03` y finalmente `10`.
 
