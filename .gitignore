@@ -3,7 +3,6 @@
 # ---------------------------------------------------------------------------
 data/
 results/
-models/
 experiments/
 submissions/
 research/
@@ -21,8 +20,6 @@ kaggle_dataset_sklearn_submission/submission.csv
 *.h5
 *.hdf5
 *.ckpt
-*.pt
-*.pth
 *.onnx
 *.tfrecord
 *.tflite
