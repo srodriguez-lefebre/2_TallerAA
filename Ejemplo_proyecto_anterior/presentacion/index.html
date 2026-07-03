@@ -1,0 +1,1493 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proyecto 1 - Bosón de Higgs</title>
+  <style>
+    :root {
+      --ink: #122033;
+      --muted: #5b6675;
+      --paper: #f7f4ee;
+      --panel: #fffdf8;
+      --line: #d7d0c3;
+      --blue: #1557a6;
+      --blue-dark: #0b2f5f;
+      --cyan: #2d9cdb;
+      --orange: #d96b18;
+      --green: #26734d;
+      --red: #b64235;
+      --shadow: 0 22px 60px rgba(18, 32, 51, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 12%, rgba(45, 156, 219, 0.16), transparent 28%),
+        radial-gradient(circle at 86% 22%, rgba(217, 107, 24, 0.10), transparent 24%),
+        linear-gradient(135deg, #ede7dc, #fbf8f1 46%, #e8eef3);
+      font-family: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.24;
+      background-image:
+        linear-gradient(rgba(18, 32, 51, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(18, 32, 51, 0.08) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(120deg, transparent, #000 18%, #000 72%, transparent);
+    }
+
+    .deck-shell {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    .toolbar {
+      position: fixed;
+      z-index: 20;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid rgba(18, 32, 51, 0.14);
+      border-radius: 999px;
+      background: rgba(255, 253, 248, 0.88);
+      box-shadow: 0 10px 28px rgba(18, 32, 51, 0.12);
+      backdrop-filter: blur(14px);
+    }
+
+    .toolbar button {
+      height: 38px;
+      border: 0;
+      border-radius: 999px;
+      padding: 0 14px;
+      color: var(--ink);
+      background: transparent;
+      font: 700 13px/1 "Aptos", "Segoe UI", sans-serif;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover {
+      background: rgba(21, 87, 166, 0.10);
+    }
+
+    .toolbar .primary {
+      color: #fff;
+      background: var(--blue-dark);
+    }
+
+    .toolbar .primary:hover {
+      background: var(--blue);
+    }
+
+    .counter {
+      min-width: 58px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .slides {
+      position: relative;
+      width: min(96vw, 1440px);
+      aspect-ratio: 16 / 9;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: hidden;
+      padding: 46px 62px;
+      border: 1px solid rgba(18, 32, 51, 0.14);
+      border-radius: 26px;
+      background:
+        linear-gradient(90deg, rgba(21, 87, 166, 0.055), transparent 32%),
+        var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .slide.active {
+      display: block;
+      animation: fade-in 260ms ease-out;
+    }
+
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.992);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .slide::after {
+      content: attr(data-section);
+      position: absolute;
+      left: 62px;
+      bottom: 24px;
+      color: rgba(18, 32, 51, 0.42);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .slide-title {
+      margin: 0;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(38px, 4.35vw, 64px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--orange);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 1.7vw, 24px);
+      line-height: 1.35;
+      max-width: 920px;
+    }
+
+    .kicker {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--blue-dark);
+      background: rgba(255, 255, 255, 0.58);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      height: calc(100% - 130px);
+      margin-top: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.64);
+      box-shadow: 0 12px 34px rgba(18, 32, 51, 0.08);
+    }
+
+    .panel.pad {
+      padding: 22px;
+    }
+
+    .panel h2,
+    .panel h3 {
+      margin: 0 0 16px;
+      color: var(--blue-dark);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .panel p,
+    .panel li {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .panel strong {
+      color: var(--ink);
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .metric {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    .metric .value {
+      margin-top: 8px;
+      color: var(--blue-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .image-frame {
+      display: grid;
+      place-items: center;
+      min-height: 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .image-frame img {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .image-frame.tight {
+      padding: 6px;
+    }
+
+    .pie-only {
+      height: 340px;
+      margin-top: 18px;
+    }
+
+    .pie-only img {
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 315px;
+      object-fit: contain;
+    }
+
+    .shap-slide .grid-2 {
+      height: 418px;
+      margin-top: 18px;
+      gap: 18px;
+    }
+
+    .shap-slide .image-frame.tight {
+      padding: 4px;
+      overflow: hidden;
+    }
+
+    .shap-slide .image-frame img {
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+    }
+
+    .shap-slide .subtitle {
+      max-width: 1220px;
+      margin-top: 12px;
+      font-size: 18px;
+      line-height: 1.26;
+    }
+
+    .cover {
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 54px;
+      align-items: stretch;
+      background:
+        linear-gradient(110deg, rgba(255, 253, 248, 0.92), rgba(255, 253, 248, 0.72) 48%, rgba(21, 87, 166, 0.12)),
+        var(--panel);
+    }
+
+    .slide.active.cover {
+      display: grid;
+    }
+
+    .cover::after,
+    .thanks::after {
+      display: none;
+    }
+
+    .cover-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .cover h1 {
+      margin: 28px 0 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(54px, 6.45vw, 96px);
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+    }
+
+    .cover-meta {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 22px;
+      line-height: 1.45;
+    }
+
+    .particle-field {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(21, 87, 166, 0.18);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 48% 50%, rgba(45, 156, 219, 0.28), transparent 12%),
+        radial-gradient(circle at 48% 50%, rgba(217, 107, 24, 0.22), transparent 4%),
+        linear-gradient(145deg, #09264d, #123d73 52%, #05152b);
+    }
+
+    .particle-field::before,
+    .particle-field::after {
+      content: "";
+      position: absolute;
+      inset: 12%;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 50%;
+      transform: rotate(-18deg) scaleX(1.38);
+    }
+
+    .particle-field::after {
+      inset: 26%;
+      transform: rotate(28deg) scaleX(1.62);
+    }
+
+    .beam {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 132%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #fff, var(--orange), #fff, transparent);
+      opacity: 0.88;
+      transform-origin: center;
+    }
+
+    .beam.b1 { transform: translate(-50%, -50%) rotate(18deg); }
+    .beam.b2 { transform: translate(-50%, -50%) rotate(-24deg); }
+    .beam.b3 { transform: translate(-50%, -50%) rotate(71deg); opacity: 0.58; }
+
+    .node {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 28px rgba(255, 255, 255, 0.72);
+    }
+
+    .node.n1 { left: 22%; top: 34%; }
+    .node.n2 { left: 69%; top: 28%; background: var(--cyan); }
+    .node.n3 { left: 62%; top: 68%; background: var(--orange); }
+    .node.n4 { left: 34%; top: 70%; }
+
+    .card-list {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .card-list li {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      gap: 16px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .badge {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--blue-dark);
+      font-weight: 900;
+    }
+
+    .badge.orange {
+      background: var(--orange);
+    }
+
+    .big-statement {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      padding: 30px;
+      border-left: 8px solid var(--orange);
+      background: rgba(255, 255, 255, 0.62);
+    }
+
+    .big-statement p {
+      margin: 0;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(32px, 3.55vw, 52px);
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+    }
+
+    .tail-bars {
+      display: grid;
+      gap: 9px;
+      margin-top: 18px;
+    }
+
+    .tail-bar {
+      display: grid;
+      grid-template-columns: 178px 1fr 34px;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .bar-track {
+      height: 16px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e6edf3;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+    }
+
+    .pipeline-table {
+      width: 100%;
+      margin-top: 22px;
+      border-collapse: separate;
+      border-spacing: 0 8px;
+    }
+
+    .pipeline-table th {
+      padding: 0 18px 8px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .pipeline-table td {
+      padding: 14px 16px;
+      color: var(--ink);
+      background: #fff;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+      line-height: 1.24;
+    }
+
+    .pipeline-table td:first-child {
+      width: 118px;
+      border-left: 1px solid var(--line);
+      border-radius: 16px 0 0 16px;
+      color: var(--blue-dark);
+      font-size: 23px;
+      font-weight: 900;
+    }
+
+    .pipeline-table td:last-child {
+      border-right: 1px solid var(--line);
+      border-radius: 0 16px 16px 0;
+      color: var(--muted);
+    }
+
+    .model-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .model-card {
+      min-height: 420px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .model-viz {
+      display: block;
+      width: 100%;
+      height: 160px;
+      margin: 0 0 14px;
+      padding: 12px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #f3f6fb, #fdfcf8);
+    }
+
+    .model-card h3 {
+      margin: 0 0 14px;
+      color: var(--blue-dark);
+      font-size: 21px;
+    }
+
+    .model-card h4 {
+      margin: 14px 0 7px;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .model-card h4.good { color: var(--green); }
+    .model-card h4.bad { color: var(--red); }
+
+    .model-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .model-card li {
+      margin: 7px 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.24;
+    }
+
+    .formula {
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(23px, 2.65vw, 36px);
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .ams-math {
+      display: block;
+      margin: 0 auto;
+      color: var(--ink);
+      font-size: clamp(22px, 2.1vw, 30px);
+    }
+
+    .ams-math math {
+      font-family: "Latin Modern Math", "STIX Two Math", "Cambria Math", "Times New Roman", serif;
+    }
+
+    .selection-layout {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 16px;
+      height: calc(100% - 160px);
+      margin-top: 22px;
+    }
+
+    .selection-chart {
+      width: min(980px, 100%);
+      height: 430px;
+      margin: 0 auto;
+      padding: 18px 28px;
+      overflow: visible;
+    }
+
+    .selection-chart img {
+      width: 760px;
+      height: auto;
+      max-width: 100%;
+      max-height: none;
+      object-fit: contain;
+    }
+
+    .ams-strip {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 18px;
+      align-items: center;
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      padding: 14px 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 10px 26px rgba(18, 32, 51, 0.07);
+    }
+
+    .ams-strip .formula {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-size: 14px;
+      line-height: 1.1;
+    }
+
+    .ams-strip p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.28;
+    }
+
+    .threshold-diagram {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 22px;
+      margin-top: 20px;
+      height: calc(100% - 150px);
+    }
+
+    .curve-box {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .curve-box svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .step-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .step {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .result-banner {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .grid-3 .panel h3 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .grid-3 .panel h3::before {
+      content: "";
+      flex: 0 0 28px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><polyline points='5 12.5 10 17 19 7'/></svg>") center/15px 15px no-repeat,
+        var(--green);
+      box-shadow: 0 3px 8px rgba(38, 115, 77, 0.32);
+    }
+
+    .result-card {
+      padding: 20px;
+      border-radius: 20px;
+      color: #fff;
+      background: linear-gradient(145deg, var(--blue-dark), var(--blue));
+    }
+
+    .result-card:nth-child(2) {
+      background: linear-gradient(145deg, #174a35, var(--green));
+    }
+
+    .result-card:nth-child(3) {
+      background: linear-gradient(145deg, #8a3b0c, var(--orange));
+    }
+
+    .result-card .value {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 36px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .result-card .label {
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.88;
+    }
+
+    .future-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .future-item {
+      min-height: 124px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .future-item h3 {
+      margin: 0 0 10px;
+      color: var(--blue-dark);
+      font-size: 23px;
+    }
+
+    .future-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.32;
+    }
+
+    .thanks {
+      place-items: center;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(45, 156, 219, 0.17), transparent 22%),
+        var(--panel);
+    }
+
+    .slide.active.thanks {
+      display: grid;
+    }
+
+    .thanks h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(72px, 10vw, 148px);
+      line-height: 0.95;
+      letter-spacing: -0.055em;
+    }
+
+    .thanks p {
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: 24px;
+    }
+
+    .nav-hint {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      z-index: 20;
+      transform: translateX(-50%);
+      color: rgba(18, 32, 51, 0.58);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .deck-shell {
+        min-height: 100vh;
+        height: auto;
+        padding: 80px 14px 42px;
+      }
+
+      .slides {
+        width: 100%;
+        aspect-ratio: auto;
+      }
+
+      .slide,
+      .slide.active {
+        position: relative;
+        display: block;
+        min-height: auto;
+        margin-bottom: 18px;
+        padding: 38px 24px 64px;
+      }
+
+      .toolbar,
+      .nav-hint {
+        display: none;
+      }
+
+      .grid-2,
+      .grid-3,
+      .cover,
+      .threshold-diagram,
+      .future-list,
+      .model-grid,
+      .result-banner,
+      .metric-row {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .model-card {
+        min-height: auto;
+      }
+    }
+
+    @media print {
+      @page {
+        size: 13.333in 7.5in;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 13.333in;
+        height: auto;
+        overflow: visible;
+        background: #fff;
+      }
+
+      body::before,
+      .toolbar,
+      .nav-hint {
+        display: none !important;
+      }
+
+      .deck-shell {
+        display: block;
+        width: 13.333in;
+        height: auto;
+        padding: 0;
+      }
+
+      .slides {
+        width: 13.333in;
+        height: auto;
+        aspect-ratio: auto;
+      }
+
+      .slide,
+      .slide.active {
+        position: relative;
+        display: block !important;
+        width: 13.333in;
+        height: 7.5in;
+        page-break-after: always;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .slide.cover,
+      .slide.active.cover,
+      .slide.thanks,
+      .slide.active.thanks {
+        display: grid !important;
+      }
+
+      .slide:last-child {
+        page-break-after: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar" aria-label="Controles de presentación">
+    <button type="button" id="prevBtn">Anterior</button>
+    <span class="counter" id="counter">1 / 13</span>
+    <button type="button" id="nextBtn">Siguiente</button>
+  </div>
+
+  <main class="deck-shell">
+    <div class="slides" id="slides">
+      <section class="slide cover active" data-section="Proyecto 1">
+        <div class="cover-copy">
+          <div class="kicker">Taller de Aprendizaje Automático · 2026</div>
+          <h1>Proyecto 1<br>Bosón de Higgs</h1>
+          <p class="cover-meta">Grupo A<br>Clasificación supervisada para distinguir señal de fondo en eventos simulados de ATLAS.</p>
+        </div>
+        <div class="particle-field" aria-hidden="true">
+          <span class="beam b1"></span>
+          <span class="beam b2"></span>
+          <span class="beam b3"></span>
+          <span class="node n1"></span>
+          <span class="node n2"></span>
+          <span class="node n3"></span>
+          <span class="node n4"></span>
+        </div>
+      </section>
+
+      <section class="slide" data-section="Planteo">
+        <p class="eyebrow">Problema y objetivo</p>
+        <h1 class="slide-title">Aprender un score útil para rankear eventos</h1>
+        <div class="grid-2">
+          <div class="panel pad">
+            <h2>El problema</h2>
+            <ul class="card-list">
+              <li><span class="badge">1</span><span><strong>Clasificación supervisada:</strong> señal frente a fondo.</span></li>
+              <li><span class="badge">2</span><span><strong>Datos etiquetados en train</strong> y sin etiqueta en test.</span></li>
+              <li><span class="badge orange">3</span><span><strong>Desafíos:</strong> desbalance de clases y valores faltantes.</span></li>
+            </ul>
+          </div>
+          <div class="panel pad">
+            <h2>Objetivo</h2>
+            <ul class="card-list">
+              <li><span class="badge">A</span><span>Aprender un score para ordenar eventos según probabilidad de señal.</span></li>
+              <li><span class="badge">B</span><span>Seleccionar un punto de trabajo que maximice <strong>AMS</strong>.</span></li>
+              <li><span class="badge orange">C</span><span>Predecir señal en test con el formato de Kaggle.</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="EDA 1">
+        <p class="eyebrow">Análisis exploratorio</p>
+        <h1 class="slide-title">Desbalance y colas largas</h1>
+        <div class="grid-2">
+          <div class="panel pad">
+            <h2>Problema: desbalance de clases</h2>
+            <div class="metric-row">
+              <div class="metric">
+                <div class="label">Background</div>
+                <div class="value">65.7%</div>
+              </div>
+              <div class="metric">
+                <div class="label">Signal</div>
+                <div class="value">34.3%</div>
+              </div>
+            </div>
+            <div class="image-frame pie-only">
+              <img src="assets/fig_2_1_distribucion_clases.png" alt="Distribución de clases">
+            </div>
+          </div>
+          <div class="panel pad">
+            <h2>Importante: variables con colas largas</h2>
+            <div class="tail-bars" aria-label="Top 8 variables con colas largas">
+              <div class="tail-bar"><span>DER_mass_MMC</span><div class="bar-track"><div class="bar-fill" style="width: 100%"></div></div><span>5.6</span></div>
+              <div class="tail-bar"><span>DER_mass_vis</span><div class="bar-track"><div class="bar-fill" style="width: 93%"></div></div><span>5.2</span></div>
+              <div class="tail-bar"><span>DER_mass_jet_jet</span><div class="bar-track"><div class="bar-fill" style="width: 82%"></div></div><span>4.6</span></div>
+              <div class="tail-bar"><span>PRI_tau_pt</span><div class="bar-track"><div class="bar-fill" style="width: 82%"></div></div><span>4.6</span></div>
+              <div class="tail-bar"><span>PRI_jet_subleading_pt</span><div class="bar-track"><div class="bar-fill" style="width: 80%"></div></div><span>4.5</span></div>
+              <div class="tail-bar"><span>PRI_met</span><div class="bar-track"><div class="bar-fill" style="width: 77%"></div></div><span>4.3</span></div>
+              <div class="tail-bar"><span>PRI_lep_pt</span><div class="bar-track"><div class="bar-fill" style="width: 77%"></div></div><span>4.3</span></div>
+              <div class="tail-bar"><span>PRI_jet_leading_pt</span><div class="bar-track"><div class="bar-fill" style="width: 77%"></div></div><span>4.3</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="EDA 2">
+        <p class="eyebrow">Análisis exploratorio</p>
+        <h1 class="slide-title">El marcador -999 depende de los jets</h1>
+        <div class="grid-2">
+          <div class="big-statement">
+            <p>El valor <strong>-999.0</strong> representa variables indefinidas, principalmente asociadas a la cantidad de jets.</p>
+          </div>
+          <div class="image-frame">
+            <img src="assets/fig_2_2_missing_y_jets.png" alt="Faltantes por variable y cantidad de jets">
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="Preprocesamiento">
+        <p class="eyebrow">Diseño de pipelines</p>
+        <h1 class="slide-title">Pipelines de preprocesamiento considerados</h1>
+        <table class="pipeline-table">
+          <thead>
+            <tr>
+              <th>Pipeline</th>
+              <th>Incluye</th>
+              <th>Objetivo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>P00</td>
+              <td>Logaritmos, imputación por mediana, StandardScaler e indicadores de faltantes.</td>
+              <td>Tratar colas largas, agregar información sobre faltantes y estandarizar características.</td>
+            </tr>
+            <tr>
+              <td>P01</td>
+              <td>P00 + one-hot encoding de <strong>PRI_jet_num</strong>.</td>
+              <td>Manejo de variables categóricas.</td>
+            </tr>
+            <tr>
+              <td>P02</td>
+              <td>P01 + RobustScaler.</td>
+              <td>Mitigar el efecto de outliers.</td>
+            </tr>
+            <tr>
+              <td>P04</td>
+              <td>P02 + ingeniería de características físicas.</td>
+              <td>Agregar información extra desde el preprocesamiento.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="slide" data-section="Modelos">
+        <p class="eyebrow">Comparación inicial</p>
+        <h1 class="slide-title">Modelos evaluados</h1>
+        <div class="model-grid">
+          <article class="model-card">
+            <svg class="model-viz" viewBox="0 0 140 80" aria-hidden="true">
+              <line x1="18" y1="64" x2="132" y2="64" stroke="#c5cdd6" stroke-width="1"/>
+              <line x1="20" y1="10" x2="20" y2="70" stroke="#c5cdd6" stroke-width="1"/>
+              <line x1="20" y1="40" x2="132" y2="40" stroke="#e3e8ee" stroke-width="1" stroke-dasharray="3 3"/>
+              <path d="M 20 62 C 50 62, 60 58, 70 40 C 80 22, 90 18, 130 18" fill="none" stroke="#1557a6" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="70" cy="40" r="3.5" fill="#d96b18"/>
+            </svg>
+            <h3>Logistic Regression</h3>
+            <h4 class="good">Ventajas</h4>
+            <ul>
+              <li>Simple y rápida.</li>
+              <li>Fácil de interpretar.</li>
+              <li>Buen baseline.</li>
+            </ul>
+            <h4 class="bad">Desventajas</h4>
+            <ul>
+              <li>Limitada para relaciones no lineales.</li>
+              <li>Menor desempeño final.</li>
+            </ul>
+          </article>
+          <article class="model-card">
+            <svg class="model-viz" viewBox="0 0 140 80" aria-hidden="true">
+              <g>
+                <polygon points="30,14 14,46 46,46" fill="#26734d"/>
+                <polygon points="30,28 18,58 42,58" fill="#34a06a"/>
+                <rect x="27" y="58" width="6" height="9" fill="#6b4423"/>
+              </g>
+              <g>
+                <polygon points="70,8 52,44 88,44" fill="#26734d"/>
+                <polygon points="70,24 55,60 85,60" fill="#34a06a"/>
+                <rect x="67" y="60" width="6" height="10" fill="#6b4423"/>
+              </g>
+              <g>
+                <polygon points="110,14 94,46 126,46" fill="#26734d"/>
+                <polygon points="110,28 98,58 122,58" fill="#34a06a"/>
+                <rect x="107" y="58" width="6" height="9" fill="#6b4423"/>
+              </g>
+            </svg>
+            <h3>Random Forest</h3>
+            <h4 class="good">Ventajas</h4>
+            <ul>
+              <li>Robusto y estable.</li>
+              <li>Captura no linealidades.</li>
+              <li>Poco sensible al escalado.</li>
+            </ul>
+            <h4 class="bad">Desventajas</h4>
+            <ul>
+              <li>Más lento.</li>
+              <li>Menos competitivo que XGBoost.</li>
+              <li>Menor interpretabilidad global.</li>
+            </ul>
+          </article>
+          <article class="model-card">
+            <svg class="model-viz" viewBox="0 0 140 80" aria-hidden="true">
+              <g stroke="#1557a6" stroke-width="2" fill="#1557a6">
+                <circle cx="20" cy="18" r="4"/>
+                <line x1="20" y1="22" x2="11" y2="38"/>
+                <line x1="20" y1="22" x2="29" y2="38"/>
+                <circle cx="11" cy="42" r="3"/>
+                <circle cx="29" cy="42" r="3"/>
+              </g>
+              <text x="42" y="32" font-size="16" font-weight="900" fill="#d96b18">+</text>
+              <g stroke="#2d9cdb" stroke-width="2" fill="#2d9cdb">
+                <circle cx="70" cy="18" r="4"/>
+                <line x1="70" y1="22" x2="61" y2="38"/>
+                <line x1="70" y1="22" x2="79" y2="38"/>
+                <circle cx="61" cy="42" r="3"/>
+                <circle cx="79" cy="42" r="3"/>
+              </g>
+              <text x="92" y="32" font-size="16" font-weight="900" fill="#d96b18">+</text>
+              <g stroke="#0b2f5f" stroke-width="2" fill="#0b2f5f">
+                <circle cx="120" cy="18" r="4"/>
+                <line x1="120" y1="22" x2="111" y2="38"/>
+                <line x1="120" y1="22" x2="129" y2="38"/>
+                <circle cx="111" cy="42" r="3"/>
+                <circle cx="129" cy="42" r="3"/>
+              </g>
+              <text x="44" y="64" font-size="10" font-weight="800" fill="#5b6675" letter-spacing="1.5">BOOSTING</text>
+            </svg>
+            <h3>XGBoost</h3>
+            <h4 class="good">Ventajas</h4>
+            <ul>
+              <li>Mejor desempeño.</li>
+              <li>Muy flexible.</li>
+              <li>Buen manejo de interacciones.</li>
+            </ul>
+            <h4 class="bad">Desventajas</h4>
+            <ul>
+              <li>Requiere tuning.</li>
+              <li>Más sensible a hiperparámetros.</li>
+              <li>Menos interpretable que un modelo lineal.</li>
+            </ul>
+          </article>
+          <article class="model-card">
+            <svg class="model-viz" viewBox="0 0 140 80" aria-hidden="true">
+              <g stroke="#c5cdd6" stroke-width="0.8" opacity="0.75">
+                <line x1="22" y1="18" x2="70" y2="12"/>
+                <line x1="22" y1="18" x2="70" y2="30"/>
+                <line x1="22" y1="18" x2="70" y2="50"/>
+                <line x1="22" y1="18" x2="70" y2="68"/>
+                <line x1="22" y1="40" x2="70" y2="12"/>
+                <line x1="22" y1="40" x2="70" y2="30"/>
+                <line x1="22" y1="40" x2="70" y2="50"/>
+                <line x1="22" y1="40" x2="70" y2="68"/>
+                <line x1="22" y1="62" x2="70" y2="12"/>
+                <line x1="22" y1="62" x2="70" y2="30"/>
+                <line x1="22" y1="62" x2="70" y2="50"/>
+                <line x1="22" y1="62" x2="70" y2="68"/>
+                <line x1="70" y1="12" x2="118" y2="40"/>
+                <line x1="70" y1="30" x2="118" y2="40"/>
+                <line x1="70" y1="50" x2="118" y2="40"/>
+                <line x1="70" y1="68" x2="118" y2="40"/>
+              </g>
+              <circle cx="22" cy="18" r="5" fill="#1557a6"/>
+              <circle cx="22" cy="40" r="5" fill="#1557a6"/>
+              <circle cx="22" cy="62" r="5" fill="#1557a6"/>
+              <circle cx="70" cy="12" r="5" fill="#2d9cdb"/>
+              <circle cx="70" cy="30" r="5" fill="#2d9cdb"/>
+              <circle cx="70" cy="50" r="5" fill="#2d9cdb"/>
+              <circle cx="70" cy="68" r="5" fill="#2d9cdb"/>
+              <circle cx="118" cy="40" r="5" fill="#d96b18"/>
+            </svg>
+            <h3>MLP simple</h3>
+            <h4 class="good">Ventajas</h4>
+            <ul>
+              <li>Capta relaciones complejas.</li>
+              <li>Potente con buen preprocesamiento.</li>
+            </ul>
+            <h4 class="bad">Desventajas</h4>
+            <ul>
+              <li>Requiere escalado y regularización.</li>
+              <li>Más inestable.</li>
+              <li>Más difícil de calibrar.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="slide selection-slide" data-section="Selección">
+        <p class="eyebrow">Selección de modelos</p>
+        <h1 class="slide-title">XGBoost sobre P04 lideró en validación cruzada</h1>
+        <div class="selection-layout">
+          <div class="image-frame selection-chart">
+            <img src="assets/fig_4_1_cv_candidatos_ams.png" alt="Validación cruzada de candidatos">
+          </div>
+          <div class="ams-strip">
+            <div class="formula ams-math" aria-label="Fórmula AMS">
+              <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                <mrow>
+                  <mi>AMS</mi>
+                  <mo>=</mo>
+                  <msqrt>
+                    <mrow>
+                      <mn>2</mn>
+                      <mo>&#x2009;</mo>
+                      <mo>[</mo>
+                      <mo>(</mo>
+                      <mi>s</mi>
+                      <mo>+</mo>
+                      <mi>b</mi>
+                      <mo>+</mo>
+                      <msub><mi>b</mi><mtext>reg</mtext></msub>
+                      <mo>)</mo>
+                      <mo>&#x2009;</mo>
+                      <mi>ln</mi>
+                      <mo>(</mo>
+                      <mn>1</mn>
+                      <mo>+</mo>
+                      <mfrac>
+                        <mi>s</mi>
+                        <mrow>
+                          <mi>b</mi>
+                          <mo>+</mo>
+                          <msub><mi>b</mi><mtext>reg</mtext></msub>
+                        </mrow>
+                      </mfrac>
+                      <mo>)</mo>
+                      <mo>&#x2212;</mo>
+                      <mi>s</mi>
+                      <mo>]</mo>
+                    </mrow>
+                  </msqrt>
+                </mrow>
+              </math>
+            </div>
+            <p><strong>s</strong>: suma de pesos de señales correctas. <strong>b</strong>: suma de pesos de background seleccionado. <strong>b<sub>reg</sub> = 10</strong>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="Optimización">
+        <p class="eyebrow">Tuning incremental</p>
+        <h1 class="slide-title">Optimización y el impacto de los pesos</h1>
+        <div class="grid-2">
+          <div class="image-frame">
+            <img src="assets/fig_5_1_evolucion_tuning_xgboost.png" alt="Evolución del AMS durante el tuning">
+          </div>
+          <div class="panel pad">
+            <h2>Decisión clave</h2>
+            <p>El uso de <strong>sample_weight</strong> durante el entrenamiento alineó el modelo con la métrica AMS.</p>
+            <div class="metric-row">
+              <div class="metric">
+                <div class="label">Base P04+XGB</div>
+                <div class="value">1.621</div>
+              </div>
+              <div class="metric">
+                <div class="label">Con pesos</div>
+                <div class="value">1.664</div>
+              </div>
+              <div class="metric">
+                <div class="label">SW04 final</div>
+                <div class="value">1.671</div>
+              </div>
+            </div>
+            <p>Configuración final: learning_rate 0.03, 800 estimadores, max_depth 6, reg_alpha 0.5 y reg_lambda 2.0.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="Threshold">
+        <p class="eyebrow">Punto de trabajo</p>
+        <h1 class="slide-title">Threshold global sobre scores OOF</h1>
+        <div class="threshold-diagram">
+          <div>
+            <div class="curve-box">
+              <svg viewBox="0 0 720 420" role="img" aria-label="Curva AMS contra umbral">
+                <rect x="0" y="0" width="720" height="420" fill="#fff"></rect>
+                <g stroke="#d8dee7" stroke-width="1">
+                  <line x1="70" y1="340" x2="660" y2="340"></line>
+                  <line x1="70" y1="270" x2="660" y2="270"></line>
+                  <line x1="70" y1="200" x2="660" y2="200"></line>
+                  <line x1="70" y1="130" x2="660" y2="130"></line>
+                  <line x1="70" y1="60" x2="660" y2="60"></line>
+                  <line x1="70" y1="60" x2="70" y2="340" stroke="#9aa6b2"></line>
+                  <line x1="70" y1="340" x2="660" y2="340" stroke="#9aa6b2"></line>
+                </g>
+                <path d="M70 340 C130 230, 220 145, 310 95 C385 54, 455 68, 520 120 C585 172, 625 245, 660 300" fill="none" stroke="#1557a6" stroke-width="8" stroke-linecap="round"></path>
+                <line x1="356" y1="86" x2="356" y2="340" stroke="#d9271c" stroke-width="3" stroke-dasharray="9 9"></line>
+                <circle cx="356" cy="86" r="14" fill="#d9271c"></circle>
+                <text x="314" y="54" fill="#d9271c" font-size="28" font-weight="800">t* ≈ 0.064</text>
+                <text x="300" y="396" fill="#5b6675" font-size="22" font-weight="700">Umbral (t)</text>
+                <text x="18" y="205" fill="#5b6675" font-size="22" font-weight="700" transform="rotate(-90 18 205)">AMS</text>
+              </svg>
+            </div>
+            <div class="step-row">
+              <div class="step">1 · Scores OOF</div>
+              <div class="step">2 · Evaluar AMS(t)</div>
+              <div class="step">3 · Elegir t*</div>
+            </div>
+          </div>
+          <div class="panel pad">
+            <h2>Resumen</h2>
+            <div class="metric-row" style="grid-template-columns: 1fr;">
+              <div class="metric">
+                <div class="label">AMS OOF</div>
+                <div class="value">3.70</div>
+              </div>
+              <div class="metric">
+                <div class="label">Señal seleccionada</div>
+                <div class="value">≈ 14%</div>
+              </div>
+              <div class="metric">
+                <div class="label">Trade-off</div>
+                <div class="value">Precisión</div>
+              </div>
+            </div>
+            <p>La política final es conservadora: sacrifica recall para reducir falsos positivos ponderados.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide shap-slide" data-section="Interpretabilidad">
+        <p class="eyebrow">SHAP values</p>
+        <h1 class="slide-title">Interpretabilidad</h1>
+        <div class="grid-2">
+          <div class="image-frame tight">
+            <img src="assets/shap_extract-001.png" alt="Importancia global SHAP">
+          </div>
+          <div class="image-frame tight">
+            <img src="assets/shap_extract-000.png" alt="Dirección e impacto SHAP">
+          </div>
+        </div>
+        <p class="subtitle">Las masas reconstruidas (<strong>DER_mass_transverse_met_lep</strong>, <strong>DER_mass_MMC</strong>) son las más influyentes; esto valida la lógica física del modelo. También aparece una feature derivada: <strong>FE_abs_dphi_tau_lep</strong>.</p>
+      </section>
+
+      <section class="slide" data-section="Resultados">
+        <p class="eyebrow">Cierre experimental</p>
+        <h1 class="slide-title">Conclusiones y resultados finales</h1>
+        <div class="grid-3">
+          <div class="panel pad">
+            <h3>Preprocesamiento clave</h3>
+            <p>Detectamos patrones estructurales <strong>(-999 → NaN)</strong> y tratamos correctamente los faltantes.</p>
+          </div>
+          <div class="panel pad">
+            <h3>Pipeline efectivo</h3>
+            <p><strong>P04</strong> combinó RobustScaler, one-hot e ingeniería física de forma consistente.</p>
+          </div>
+          <div class="panel pad">
+            <h3>Modelo seleccionado</h3>
+            <p>XGBoost superó a Logistic Regression, Random Forest y MLP simple en validación cruzada.</p>
+          </div>
+          <div class="panel pad">
+            <h3>Impacto de los pesos</h3>
+            <p><strong>sample_weight</strong> alineó el entrenamiento con AMS y fue clave para mejorar desempeño.</p>
+          </div>
+          <div class="panel pad">
+            <h3>Punto de trabajo</h3>
+            <p>Con scores OOF elegimos una política conservadora favorable para AMS.</p>
+          </div>
+          <div class="panel pad">
+            <h3>Interpretabilidad</h3>
+            <p>SHAP permitió validar qué variables aportan más y su coherencia física.</p>
+          </div>
+        </div>
+        <div class="result-banner">
+          <div class="result-card"><div class="value">3.68860</div><div class="label">Private score</div></div>
+          <div class="result-card"><div class="value">3.61216</div><div class="label">Public score</div></div>
+          <div class="result-card"><div class="value">14.07%</div><div class="label">Señal aprox.</div></div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="Trabajo futuro">
+        <p class="eyebrow">Próximas líneas</p>
+        <h1 class="slide-title">Trabajo futuro</h1>
+        <div class="future-list">
+          <div class="future-item">
+            <h3>Estabilidad de la validación</h3>
+            <p>Verificar distribución de PRI_jet_num entre folds y sensibilidad a particiones.</p>
+          </div>
+          <div class="future-item">
+            <h3>Selección de características</h3>
+            <p>Usar importancias de XGBoost o SHAP para simplificar el espacio de entrada.</p>
+          </div>
+          <div class="future-item">
+            <h3>Análisis de errores</h3>
+            <p>Estudiar falsos positivos y falsos negativos por grupo de jets y tipo de evento.</p>
+          </div>
+          <div class="future-item">
+            <h3>Modelos por régimen de jets</h3>
+            <p>Retomar modelos o thresholds especializados para eventos con 0, 1 y 2+ jets.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide thanks" data-section="Cierre">
+        <div>
+          <h1>Muchas gracias</h1>
+          <p>Proyecto 1 · Bosón de Higgs · Grupo A</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="nav-hint">Usar ← → para navegar · F para pantalla completa</div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const counter = document.getElementById("counter");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    let current = 0;
+
+    function showSlide(index) {
+      current = Math.max(0, Math.min(index, slides.length - 1));
+      slides.forEach((slide, i) => slide.classList.toggle("active", i === current));
+      counter.textContent = `${current + 1} / ${slides.length}`;
+      document.title = `${current + 1}. ${slides[current].dataset.section} - Bosón de Higgs`;
+    }
+
+    function next() {
+      showSlide(current + 1);
+    }
+
+    function previous() {
+      showSlide(current - 1);
+    }
+
+    prevBtn.addEventListener("click", previous);
+    nextBtn.addEventListener("click", next);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") {
+        event.preventDefault();
+        next();
+      }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        previous();
+      }
+      if (event.key.toLowerCase() === "f") {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.();
+        } else {
+          document.exitFullscreen?.();
+        }
+      }
+      if (event.key === "Home") {
+        showSlide(0);
+      }
+      if (event.key === "End") {
+        showSlide(slides.length - 1);
+      }
+    });
+
+    showSlide(0);
+  </script>
+</body>
+</html>

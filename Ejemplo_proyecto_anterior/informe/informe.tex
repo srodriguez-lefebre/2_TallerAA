@@ -1,0 +1,240 @@
+\documentclass{article}
+\usepackage[spanish]{babel}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[margin=1.2cm, footskip=0.5cm]{geometry}
+\usepackage{comment}
+\usepackage{pdfpages}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs} % Para tablas elegantes
+\usepackage{float}
+\nocite{*}
+\title{\textbf{Proyecto 1 - Bosón de Higgs}\\Taller de Aprendizaje Automático}
+\author{Luciana García  \and Santiago Márquez \and Santiago Rodríguez}
+\date{\today}
+\begin{document}
+\maketitle
+
+% \newpage
+% \renewcommand{\contentsname}{Índice}
+% \tableofcontents
+
+\section{Introducción}
+\subsection{Resumen}
+El problema se fundamenta en el experimento del Bosón de Higgs, realizado en 2012 en el CERN, el cual fue clave para explicar por qué algunas partículas tienen masa. Los datos analizados provienen del detector ATLAS, situado en el acelerador LHC (Large Hadron Collider), un entorno donde se generan aproximadamente 20 millones de choques por segundo, denominados eventos, de los cuales en una parte de ellos aparece la partícula tau (denominados  \textit{signals}), y en otra no aparece (denominados \textit{background}).
+La inmensa mayoría de estos choques no corresponden al Bosón de Higgs, por lo que el uso de técnicas de Machine Learning (ML) es indispensable para filtrar el enorme volumen de background y extraer los aproximadamente 400 eventos de interés por segundo. Este proyecto tiene como objetivo diseñar e implementar un clasificador basado en Aprendizaje Automático para distinguir los eventos signals de los backgrounds.
+
+\subsection{Metodología general}
+La metodología aplicada se estructuró de la siguiente manera:
+\begin{itemize}
+    \item \textbf{Análisis analítico de los datos:} El proceso inició con la carga del conjunto de datos y una inspección técnica de su estructura utilizando funciones para identificar tipos de variables (numéricas y categóricas), dimensiones del dataset y la presencia de valores nulos, con el marcador $-999.0$. 
+    \item \textbf{Análisis exploratorio:} Se realizó una exploración profunda mediante visualizaciones y estadísticas descriptivas para ganar conocimientos sobre la distribución de las variables y detectar posibles anomalías. Se calculó la matriz de correlación de Pearson para identificar qué características tenían mayor impacto sobre la variable a predecir, permitiendo descartar atributos irrelevantes o identificar la necesidad de transformaciones no lineales.
+    \item \textbf{Preprocesamiento de datos:} Se diseñaron  pipelines para automatizar la preparación de los datos y asegurar la reproducibilidad. Esto incluyó el manejo de valores faltantes, el escalado de características (estandarización) y la codificación de variables categóricas. Además, se aplicó ingeniería de características para crear nuevas variables que capturaran mejor la lógica del problema.
+    \item \textbf{Evaluación de desempeño:} Se utilizó AMS (Approximate Median Significance) como criterio principal, por ser la métrica de la competencia y ponderar el balance entre señal detectada y fondo seleccionado. Además, se usó AUC () como métrica auxiliar para medir la calidad del ranking de scores independientemente del umbral elegido.
+    \item \textbf{Experimentación con modelos de ML:} Los datos se dividieron en conjuntos de entrenamiento, validación y prueba para evaluar la capacidad de generalización. Se entrenaron diversos algoritmos, desde regresiones lineales hasta métodos de ensamble como Random Forest y Gradient Boosting, evaluando su desempeño mediante AMS y AUC y aplicando validación cruzada. Finalmente, se realizó un ajuste fino de hiperparámetros.    
+\end{itemize}
+
+\section{Exploración y análisis de los datos}
+\subsection{Estructura del dataset y distribución de clases}
+En el conjunto de datos utilizado cada fila representa un evento físico simulado y está descrita mediante 30 variables de entrada. El archivo de entrenamiento contiene 250000 eventos, mientras que el archivo de prueba contiene 550000 eventos. En el conjunto de entrenamiento aparecen además tres columnas especiales: \texttt{EventId}, \texttt{Weight} y \texttt{Label}; estas no tienen el mismo rol que las variables predictoras, \texttt{EventId} identifica cada evento, \texttt{Weight} se utiliza para la métrica de evaluación y \texttt{Label} contiene la clase objetivo.
+
+La variable objetivo es binaria; la clase \texttt{b} representa eventos de fondo (\textit{background}) y la clase \texttt{s} representa eventos de señal (\textit{signal}). Como se observa en la Figura~\ref{fig:distribucion-clases}, el conjunto no está balanceado: la clase \textit{background} es mayoritaria. Esta característica es relevante porque la exactitud por sí sola no alcanza para evaluar correctamente el modelo, interesa especialmente seleccionar eventos de señal reduciendo la cantidad de falsos positivos ponderados.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/fig_2_1_distribucion_clases.png}
+    \caption{Distribución de la variable objetivo en el conjunto de entrenamiento.}
+    \label{fig:distribucion-clases}
+\end{figure}
+
+Inicialmente consideramos tener en cuenta la correlación para ver si podíamos descartar características, pero nos dimos cuenta de que las relaciones no eran lineales, por lo que no nos sirvió como criterio.
+
+Notamos también que las distribuciones de algunas características presentan un comportamiento de ``long-tail"
+
+\subsection{Variables físicas y análisis de \texttt{PRI\_jet\_num}}
+Las variables del dataset se dividen principalmente en dos grupos. Las variables con prefijo \texttt{PRI\_*} corresponden a magnitudes primitivas medidas o reconstruidas directamente del evento, como momentos transversales, ángulos, energía faltante y cantidad de jets. Las variables con prefijo \texttt{DER\_*} son cantidades derivadas a partir de esas mediciones, como masas reconstruidas, separaciones angulares o relaciones entre objetos físicos.
+
+Dentro de estas variables, \texttt{PRI\_jet\_num} resultó especialmente importante. Esta variable toma los valores 0, 1, 2 y 3, donde el valor 3 representa eventos con tres o más jets. No se trata de una magnitud continua, sino de una categoría que separa regímenes físicos distintos. Además, como se observará en la siguiente sección, condiciona directamente qué variables pueden estar definidas. Por otro lado, en los preprocesamientos posteriores se decidió tratarla como variable categórica y no como una variable numérica ordinaria, además de construir nuevas variables físicas derivadas como razones entre momentos, diferencias angulares y relaciones asociadas a jets.
+
+\subsection{Valores faltantes y relación con jets}
+Una particularidad importante del dataset es que los valores faltantes no aparecen codificados como nulos, sino con el valor artificial \texttt{-999}, que no representa una medición física válida, sino una variable que no pudo calcularse o que no tiene sentido para cierto evento. Por este motivo, durante el análisis se lo trató como un marcador de faltante y no como un número real.
+
+Los faltantes no se distribuyen de forma aleatoria. En gran parte están relacionados con la cantidad de jets del evento, representada por \texttt{PRI\_jet\_num}. Por ejemplo, si un evento no tiene jets, las variables asociadas al jet principal quedan indefinidas; si tiene menos de dos jets, las variables asociadas al segundo jet o al sistema de dos jets tampoco pueden calcularse. La Figura~\ref{fig:missing-jets} muestra esta relación: las variables como \texttt{PRI\_jet\_subleading\_pt}, \texttt{DER\_mass\_jet\_jet} y \texttt{DER\_deltaeta\_jet\_jet} presentan altos porcentajes de faltantes en los eventos con menos jets.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/fig_2_2_missing_y_jets.png}
+    \caption{Distribución de eventos según \texttt{PRI\_jet\_num} y porcentaje de valores faltantes por variable y cantidad de jets.}
+    \label{fig:missing-jets}
+\end{figure}
+
+\section{Preprocesamiento e ingeniería de características}
+Luego de una primera etapa de pruebas exploratorias con distintos criterios de limpieza y transformación, se decidió reiniciar el preprocesamiento de forma más ordenada. El objetivo fue construir una base común reproducible, evitar fugas de información y comparar variantes bajo las mismas reglas. De esta forma, las diferencias observadas entre modelos podían atribuirse con mayor claridad al pipeline utilizado y no a cambios accidentales en la preparación de los datos.
+
+\subsection{Procedimiento común de limpieza}
+El procedimiento común se definió como una etapa previa a todos los pipelines. En esta etapa se separaron las columnas especiales \texttt{EventId}, \texttt{Label} y \texttt{Weight} de la matriz de entrada. La variable objetivo se codificó como un problema binario, con \texttt{0} para \textit{background} y \texttt{1} para \textit{signal}.
+
+También se reemplazaron los valores \texttt{-999} por \texttt{NaN} inmediatamente después de cargar los datos. Esta transformación permitió que las etapas posteriores trabajaran con una representación explícita de los faltantes. Luego se realizó la separación entre entrenamiento y validación antes de ajustar cualquier transformación. Las medianas de imputación, los escaladores y los indicadores de faltantes se ajustaron únicamente con el conjunto de entrenamiento, evitando utilizar información del conjunto de validación. El rol de estos tres métodos es el de resaltar los comportamientos que difieran del promedio, sin perder información sobre los valores faltantes que fueron mencionados.
+
+Otro criterio importante fue no eliminar columnas por cantidad de datos faltantes al inicio. En lugar, se mantuvieron las variables originales, se agregaron indicadores de faltantes cuando correspondía y se guardaron tanto los datos procesados como los objetos de preprocesamiento ajustados. Esto hizo que los experimentos fueran más trazables y reproducibles.
+
+\subsection{Pipelines de preprocesamiento evaluados}
+Sobre la base común se construyeron distintas variantes para aislar el efecto de decisiones específicas: el tratamiento de \texttt{PRI\_jet\_num}, el tipo de escalado, la separación por regímenes de jets y la incorporación de variables derivadas. La Tabla~\ref{tab:pipelines-preprocesamiento} resume las variantes evaluadas.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{@{}p{0.12\textwidth} p{0.48\textwidth} p{0.28\textwidth}@{}}
+        \toprule
+        Pipeline & Idea principal & Objetivo \\
+        \midrule
+        \texttt{P00} & Logaritmos, imputación por mediana, \texttt{StandardScaler} e indicadores de faltantes. & Referencia inicial. \\
+        \texttt{P01} & \texttt{P00} agregando one-hot encoding de \texttt{PRI\_jet\_num}. & Tratar la cantidad de jets como categórica. \\
+        \texttt{P02} & \texttt{P01} usando \texttt{RobustScaler}. & Reducir sensibilidad a colas largas y outliers. \\
+        \texttt{P03} & Preprocesamiento separado según grupos de jets. & Explotar regímenes físicos distintos. \\
+        \texttt{P04} & \texttt{P02} más ingeniería de características físicas. & Enriquecer la representación del evento. \\
+        \bottomrule
+    \end{tabular}
+    \caption{Resumen de los pipelines de preprocesamiento evaluados.}
+    \label{tab:pipelines-preprocesamiento}
+\end{table}
+
+El pipeline \texttt{P00} se utilizó principalmente como referencia, mientras que \texttt{P01} y \texttt{P02} incorporaron el tratamiento categórico de \texttt{PRI\_jet\_num}. El pipeline \texttt{P03} evaluó una hipótesis diferente, entrenar transformaciones y modelos por separado para distintos grupos de jets. Finalmente, \texttt{P04} tomó la variante \texttt{P02} y le agregó variables derivadas físicamente motivadas.
+
+\subsection{Ingeniería de características}
+La ingeniería de características buscó hacer explícitas relaciones físicas que no siempre quedan representadas de forma directa por las variables originales. Las variables agregadas se agruparon en varias familias. Se incluyeron diferencias angulares entre objetos físicos, relaciones entre energía faltante y momento visible, razones de masas, proporciones asociadas a jets y balances entre el jet principal y el subprincipal. Cuando una característica derivada dependía de una variable indefinida, el resultado se mantuvo como \texttt{NaN} y fue tratado luego por el mismo mecanismo de imputación e indicadores de faltantes. Este enfoque permitió enriquecer el espacio de entrada sin romper la lógica del preprocesamiento común.
+
+\subsection{Selección del pipeline final}
+La comparación inicial mostró que \texttt{P04} era el pipeline más prometedor. Se lo evaluó con XGBoost sobre el split de validación, \texttt{P04} alcanzó el mejor AMS y el mejor AUC entre las variantes evaluadas. Además, también mejoró el desempeño de la red neuronal simple frente a pipelines sin ingeniería física.
+
+El pipeline por grupos de jets, \texttt{P03}, resultó interesante, pero no superó a la alternativa global como estrategia principal. Por esta razón, se seleccionó \texttt{P04} como base para las etapas posteriores de modelado, validación cruzada y ajuste de hiperparámetros.
+
+En las siguientes secciones se reforzará la intuición de por qué consideramos el modelo XGBoost y la razón por la cual \texttt{P04} resultó el pipeline más adecuado.
+
+\section{Modelos evaluados y validación inicial}
+\subsection{Modelos base considerados}
+Una vez definidos los pipelines de preprocesamiento, se compararon distintas familias de modelos con el objetivo de elegir una línea principal de trabajo. La intención en esta etapa no fue optimizar cada modelo, sino obtener referencias comparables y evitar asumir desde el inicio que una única técnica sería la más adecuada.
+
+Se consideraron modelos con distintos sesgos inductivos. La regresión logística se utilizó como baseline lineal, útil para medir cuánto podía capturarse con una frontera de decisión simple. Random Forest permitió evaluar un ensamble no lineal basado en árboles, sin recurrir todavía a boosting. XGBoost se incluyó como candidato fuerte para datos tabulares con interacciones no lineales. Finalmente, se entrenó una red neuronal densa simple para contrastar el desempeño de un modelo neuronal sobre los datos escalados.
+
+Durante esta comparación se trabajó únicamente con datasets ya procesados y se mantuvo \texttt{Weight} fuera de la matriz de entrada. La métrica principal fue AMS, cuya fórmula se detalla en \ref{eq:ams}, por ser la métrica relevante del desafío, y se utilizó AUC como medida auxiliar de la calidad del ranking producido por los scores.
+\begin{equation}
+    \label{eq:ams}
+    AMS = \sqrt{2 \left( (s + b + b_{reg}) \ln \left( 1 + \frac{s}{b + b_{reg}} \right) - s \right)}
+\end{equation}
+donde s es la suma de pesos de los eventos signal seleccionados correctamente, b la suma de pesos de los eventos background seleccionados, y  $b_{reg} = 10$ un término de regularización.
+
+\subsection{Primera comparación de pipelines y modelos}
+La primera comparación cruzó los pipelines procesados con modelos base. Se evaluaron regresiones logísticas sobre \texttt{P00}, \texttt{P01} y \texttt{P02}; Random Forest sobre \texttt{P01} y \texttt{P02}; XGBoost base sobre \texttt{P01}, \texttt{P02} y \texttt{P04}; y una MLP simple sobre \texttt{P02} y \texttt{P04}. Se buscó separar el efecto del preprocesamiento del efecto de la familia de modelos.
+
+Los modelos lineales quedaron claramente por debajo de los métodos basados en árboles y boosting, lo que indicó que una frontera lineal no era suficiente para capturar la estructura del problema. Random Forest mejoró respecto al baseline lineal, pero no quedó como candidato principal y presentó mayor costo de entrenamiento. La MLP simple fue competitiva, especialmente sobre \texttt{P04}, aunque no superó a XGBoost.
+
+El mejor resultado inicial correspondió a \texttt{P04} + XGBoost base, con un AMS de 1.1129 y un AUC de 0.9102 en el split de validación. También se observó que \texttt{P01} y \texttt{P02} daban resultados muy similares con XGBoost, lo que sugiere que el tipo de escalado no era el factor dominante para los modelos de árboles. En cambio, la mejora de \texttt{P04} apuntaba a que las variables físicas derivadas aportaban información útil.
+\subsection{Validación cruzada de candidatos}
+A partir de la comparación inicial se redujo el conjunto de alternativas a cuatro candidatos representativos: \texttt{P04} + XGBoost base, \texttt{P02} + XGBoost base, \texttt{P04} + MLP simple y \texttt{P01} + Random Forest. Estos modelos se evaluaron mediante validación cruzada de 5 folds, manteniendo el mismo criterio de partición para comparar de forma más estable.
+
+La Figura~\ref{fig:cv-candidatos-ams} resume el AMS medio y su variabilidad entre folds. El candidato \texttt{P04} + XGBoost obtuvo el mejor AMS medio, 1.6210, con AUC medio 0.9124. \texttt{P02} + XGBoost quedó muy cerca, con AMS medio 1.6143 y menor desvío, por lo que se mantuvo como referencia simple y estable. La MLP sobre \texttt{P04} resultó competitiva, pero no alcanzó a los modelos de boosting. Random Forest quedó como baseline robusto, aunque no justificó continuar con ajuste fino.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\textwidth]{img/fig_4_1_cv_candidatos_ams.png}
+    \caption{Comparación por validación cruzada de candidatos iniciales. Las barras muestran el AMS medio en 5 folds y las líneas de error indican el desvío estándar.}
+    \label{fig:cv-candidatos-ams}
+\end{figure}
+
+Esta validación permitió decidir la línea principal del trabajo. Aunque la diferencia entre \texttt{P04} y \texttt{P02} no fue grande, \texttt{P04} lideró en AMS medio y además era consistente con la hipótesis de incorporar información física derivada. Por esta razón, la búsqueda posterior se concentró en XGBoost sobre \texttt{P04}, manteniendo \texttt{P02} como referencia secundaria.
+
+\section{Ajuste de hiperparámetros y regularización del modelo}
+\subsection{Búsqueda incremental de hiperparámetros}
+Luego de seleccionar \texttt{P04} + XGBoost como línea principal, se realizó un ajuste progresivo del modelo. En lugar de ejecutar una búsqueda masiva sobre todos los hiperparámetros, se modificaron pocos parámetros por etapa. Esto permitió interpretar mejor qué cambios aportaban mejoras reales y cuáles no justificaban continuar.
+
+La búsqueda mantuvo la validación cruzada de 5 folds como criterio de comparación. Primero se ajustaron \texttt{learning\_rate} y \texttt{n\_estimators}, ya que controlan el compromiso entre tamaño del ensamble, capacidad y costo computacional. La mejor configuración de esta etapa fue \texttt{learning\_rate = 0.03} con \texttt{n\_estimators = 800}, alcanzando un AMS medio de 1.6317 frente al 1.6210 del modelo base.
+
+Luego se probaron modificaciones en \texttt{max\_depth} y \texttt{min\_child\_weight}. Las configuraciones más restringidas no superaron al modelo anterior, lo que sugirió que reducir demasiado la capacidad de los árboles perjudicaba la métrica. Por este motivo se mantuvieron \texttt{max\_depth = 6} y \texttt{min\_child\_weight = 1}.
+
+La evolución de la métrica durante las etapas principales se muestra en la Figura~\ref{fig:evolucion-tuning-xgboost}. La mejora fue gradual al ajustar tamaño del ensamble y regularización, pero el salto más importante apareció al incorporar pesos de entrenamiento.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\textwidth]{img/fig_5_1_evolucion_tuning_xgboost.png}
+    \caption{Evolución del AMS medio durante el ajuste incremental de XGBoost sobre \texttt{P04}.}
+    \label{fig:evolucion-tuning-xgboost}
+\end{figure}
+
+En segundo lugar, se evaluó regularización por muestreo con \texttt{subsample} y \texttt{colsample\_bytree}. La intención fue reducir varianza entrenando cada árbol con subconjuntos de filas y columnas. Las pruebas no mostraron una mejora clara al usar muestreos más agresivos, por lo que se mantuvo \texttt{subsample = 0.9} y \texttt{colsample\_bytree = 0.9}.
+Finalmente se ajustaron las penalizaciones explícitas \texttt{reg\_alpha} y \texttt{reg\_lambda}, asociadas a regularización L1 y L2. Sin usar pesos de entrenamiento, una regularización L1 suave, con \texttt{reg\_alpha = 0.1} y \texttt{reg\_lambda = 1.0}, elevó el AMS medio a 1.6357. La mejora fue pequeña, pero confirmó que cierta penalización ayudaba a controlar el modelo sin reducir su estructura.
+
+\subsection{Uso de \texttt{sample\_weight}}
+Una decisión importante fue distinguir entre usar \texttt{Weight} como variable predictora y usarlo como peso de entrenamiento. En todos los experimentos, \texttt{Weight} se mantuvo fuera de la matriz de entrada \texttt{X}. Primero se utilizó únicamente para calcular AMS en validación, luego se evaluó su uso como \texttt{sample\_weight} durante el ajuste del modelo.
+
+Esta modificación alineó mejor el entrenamiento con la métrica del desafío, ya que AMS pondera los eventos de acuerdo con su peso. El efecto fue claro, la mejor configuración sin pesos alcanzaba un AMS medio de 1.6357, mientras que al usar \texttt{sample\_weight} el AMS subió a 1.6640. Luego, con un refinamiento local de regularización, se obtuvo la configuración \texttt{SW04}, con \texttt{reg\_alpha = 0.5} y \texttt{reg\_lambda = 2.0}, que alcanzó un AMS medio de 1.6709.
+
+\subsection{Configuración final de XGBoost}
+La configuración final del modelo quedó fijada antes de estudiar la política de decisión. Se utilizó el pipeline \texttt{P04}, XGBoost con objetivo \texttt{binary:logistic}, \texttt{tree\_method = hist}, \texttt{learning\_rate = 0.03}, \texttt{n\_estimators = 800}, \texttt{max\_depth = 6}, \texttt{min\_child\_weight = 1}, \texttt{subsample = 0.9}, \texttt{colsample\_bytree = 0.9}, \texttt{reg\_alpha = 0.5} y \texttt{reg\_lambda = 2.0}. El entrenamiento se realizó usando \texttt{Weight} como \texttt{sample\_weight}.
+
+Con esta configuración, el modelo obtuvo en validación cruzada un AMS medio de 1.6709, con desvío estándar 0.0784, y un AUC medio de 0.8983. Además, los umbrales óptimos por fold quedaron en una zona baja, con mediana cercana a 0.0541, y una proporción media de eventos clasificados como señal de aproximadamente 15.4\%.
+
+Esta configuración se tomó como modelo final interno para generar scores. La etapa siguiente consistió en decidir cómo transformar esos scores continuos en etiquetas \texttt{s}/\texttt{b}, es decir, seleccionar el punto de trabajo del clasificador.
+
+\section{Selección del punto de trabajo y submission final}
+\subsection{Scores y política de decisión}
+Una vez fijado el modelo, todavía quedaba una decisión importante, cómo transformar los scores continuos en etiquetas finales. XGBoost devuelve para cada evento un score asociado a la clase \texttt{s}, pero la métrica AMS depende de cuáles eventos se seleccionan finalmente como señal.
+
+Se estudiaron varias políticas de decisión como umbrales óptimos por fold, promedio o mediana de esos umbrales, un umbral óptimo global sobre scores out-of-fold (OOF) y reglas basadas en seleccionar un porcentaje fijo de eventos con mayor score.
+
+La motivación de las políticas por porcentaje fue reducir la dependencia respecto al valor absoluto del score. En particular, luego de incorporar \texttt{sample\_weight}, la escala de los scores cambió de forma importante. En ese contexto, utilizar el ranking del modelo resultaba una alternativa más robusta que depender únicamente de una calibración absoluta.
+
+\subsection{Elección del threshold}
+Para estudiar las políticas de decisión sin usar el conjunto de test, se generaron scores out-of-fold del modelo final. Es decir, cada evento del conjunto de entrenamiento recibió un score producido por un modelo que no había sido entrenado con ese evento. Para cada fila se guardó la etiqueta real, el peso, el score, el identificador del evento y el fold correspondiente.
+
+El Cuadro ~\ref{tab:politicas-oof} resume las principales políticas evaluadas. El umbral óptimo global sobre los scores OOF obtuvo el mejor AMS, pero la política de clasificar como señal el 14\% de eventos con mayor score quedó prácticamente empatada. Dado que la diferencia era mínima, se prefirió inicialmente la regla basada en porcentaje por depender del ranking y no del valor absoluto del score.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{@{}p{0.34\textwidth} r r r r r@{}}
+        \toprule
+        Política & AMS OOF & Signal \% & Precisión & Recall & F1 \\
+        \midrule
+        Threshold óptimo global OOF & 3.6986 & 14.00 & 0.9210 & 0.3763 & 0.5343 \\
+        Top 14\% signal & 3.6979 & 14.00 & 0.9210 & 0.3763 & 0.5343 \\
+        Top 15\% signal & 3.6817 & 15.00 & 0.9138 & 0.4000 & 0.5564 \\
+        Media thresholds fold & 3.6787 & 15.20 & 0.9123 & 0.4047 & 0.5606 \\
+        Mediana thresholds fold & 3.6782 & 15.28 & 0.9119 & 0.4067 & 0.5625 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Comparación de políticas de decisión sobre scores out-of-fold.}
+    \label{tab:politicas-oof}
+\end{table}
+
+Un aspecto que puede llamar la atención es el bajo valor que se obtiene para la métrica Recall. No obstante, este valor tiene sentido, ya que el AMS no premia encontrar la mayor cantidad posible de señales sin más, sino que penaliza mucho meter background ponderado como falso positivo, obteniendo así una política conservadora. O sea, de los eventos que marcamos como señal, la mayoría son realmente señal; pero recuperamos solo $\approx 38\%$ de todas las señales. Para AMS, ese tradeoff puede ser mejor que subir recall y contaminar mucho con background. De hecho, cuando subimos el porcentaje a 15\%, el recall mejora a 0.4000, pero el AMS OOF baja de 3.6979 a 3.6817. O sea, más recall no implicó mejor métrica objetivo.
+
+Luego del análisis OOF se realizaron submissions controladas para evaluar el comportamiento en Kaggle. Primero se comparó el umbral óptimo global OOF contra la regla top 14\%. La política top 14\% obtuvo mejor resultado público y prácticamente el mismo resultado privado, por lo que se continuó con reglas basadas en porcentaje.
+
+También se compararon dos formas de generar scores para el conjunto de test. La primera consistió en entrenar un único modelo con todos los datos disponibles. La segunda fue un ensamble de los cinco modelos de la validación cruzada, promediando sus scores sobre test. Esta segunda estrategia buscaba estabilizar el ranking final de eventos.
+
+
+
+\subsection{Submission final}
+La submission final seleccionada utilizó el pipeline \texttt{P04}, el modelo XGBoost ajustado en la sección anterior y un ensamble de 5 modelos entrenados sobre los folds de validación cruzada. Para cada evento de test se promediaron los scores de los cinco modelos, luego se ordenaron los eventos por score y se clasificó como \texttt{s} el 14.00\% con mayor score, dejando el resto como \texttt{b}. Con esta política se obtuvo un score público de 3.60211. 
+
+El código final entregable se dejó en el notebook \texttt{pipeline\_final\_taller\_1.ipynb}. Este notebook parte de los archivos raw, reconstruye el preprocesamiento, entrena el ensamble, genera los scores y produce el archivo \texttt{pipeline\_final\_taller\_1.csv}. De esta forma, la solución final puede ejecutarse nuevamente sobre los datos de test sin depender de artefactos intermedios generados manualmente.
+
+En este link de Comet: \texttt{https://www.comet.com/equipo-a/proyecto-1-taa/view/new/panels}, se encuentran registrados los principales experimentos mencionados en este documento. La organización de los experimentos sigue la misma numeración utilizada en el repositorio: los pasos \texttt{50} a \texttt{61} corresponden a etapas sucesivas del trabajo, desde la construcción de pipelines de preprocesamiento hasta la selección final de la política de decisión. En Comet, el nombre de cada experimento comienza con el número de carpeta y una descripción breve de la configuración evaluada, por ejemplo el pipeline utilizado, el modelo, la variante de hiperparámetros o la política de threshold. Esta codificación permite vincular cada resultado reportado en el informe con el código y la etapa experimental que lo generó.
+
+\section{Conclusiones}
+A lo largo del proyecto, se llevó a cabo el abordaje de un proyecto de aprendizaje automático desde cero, pasando por todas las etapas de la construcción de un modelo, obteniendo así un buen modelo para la predicción de señales (s). A pesar de que no se logró el mejor modelo para el desafío en cuestión (según los scores observados en el desafío de kaggle original cuyo valor máximo es 3.80581), el valor del trabajo radica en el proceso mencionado, pudiendo discernir en cada ocasión en qué consistía un buen o un mal modelo para este contexto y logrando así la construcción de un pipeline que creemos cumple las expectativas de este trabajo. 
+
+
+\section{Trabajo futuro}
+
+Como trabajo futuro, se propone profundizar el análisis de estabilidad de la validación, en particular verificando que la distribución de \texttt{PRI\_jet\_num} sea equilibrada entre folds. Dado que esta variable define regímenes físicos distintos y condiciona la presencia de varias variables, una partición desbalanceada podría afectar la estimación del desempeño.
+
+Otra línea posible consiste en estudiar selección de características a partir de la importancia estimada por XGBoost. En particular, se podría analizar la importancia de cada variable, eliminar aquellas con aporte muy bajo según un umbral definido y volver a entrenar el modelo para verificar si se mantiene o mejora el AMS. Esto permitiría reducir ruido, simplificar el modelo y evaluar si algunas de las variables originales o derivadas no aportan información relevante.
+
+También sería relevante analizar los errores del modelo por grupo de jets y por tipo de evento, para identificar en qué regiones del espacio de características se concentran los falsos positivos y falsos negativos. Esto podría complementarse con técnicas de interpretabilidad, como SHAP values, para estudiar qué variables tienen mayor influencia en las predicciones.
+
+Finalmente, se podría retomar la idea de modelos o políticas de decisión específicas por régimen de jets. Dado que \texttt{PRI\_jet\_num} separa eventos con distinta estructura física, una posible mejora sería ajustar thresholds o incluso modelos especializados para eventos con 0, 1 y 2 o más jets, comparando luego si esta estrategia mejora frente al modelo global utilizado en la solución final.
+\bibliographystyle{plain}
+\bibliography{referencias} 
+\end{document}
