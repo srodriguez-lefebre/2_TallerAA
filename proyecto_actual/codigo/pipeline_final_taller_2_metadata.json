@@ -1,0 +1,94 @@
+{
+  "config": {
+    "repo_root": "/home/santig14/fing/taa/2_TallerAA",
+    "python_for_subprocesses": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python",
+    "run_heavy_steps": false,
+    "expected_private_lb": 0.67126,
+    "expected_sha256": "4247ab9ff6398fbb1b6af223629d004265e27bb6cbccabf53ec4969a96c61cab"
+  },
+  "dataset_summary": [
+    {
+      "split": "train_curated",
+      "rows": 4970,
+      "unique_files": 4970,
+      "labels_per_audio_mean": 1.157344064386318
+    },
+    {
+      "split": "train_noisy",
+      "rows": 19815,
+      "unique_files": 19815,
+      "labels_per_audio_mean": 1.2112036336109009
+    },
+    {
+      "split": "test",
+      "rows": 3361,
+      "unique_files": 3361,
+      "labels_per_audio_mean": NaN
+    }
+  ],
+  "components": [
+    {
+      "component": "separable_headsep_e100_seed42",
+      "weight": 0.25,
+      "input": "log-mel 128 x 512",
+      "normalization": "por clip",
+      "architecture": "CNN separable-residual + cabeza densa",
+      "role": "patrones locales tiempo-frecuencia"
+    },
+    {
+      "component": "globalmel_sep_temporal_e100_seed42",
+      "weight": 0.375,
+      "input": "log-mel 128 x 512",
+      "normalization": "global por banda mel",
+      "architecture": "CNN separable-residual + BiGRU",
+      "role": "escala estable y evolucion temporal"
+    },
+    {
+      "component": "sep_temporal_f1024_e100_seed42",
+      "weight": 0.375,
+      "input": "log-mel 128 x 1024",
+      "normalization": "por clip",
+      "architecture": "CNN separable-residual + BiGRU",
+      "role": "contexto temporal largo"
+    }
+  ],
+  "selected_component_paths": [
+    {
+      "component": "separable_headsep_e100_seed42",
+      "weight": 0.25,
+      "source": "official archive",
+      "path": "investigation/submissions/parallel100_20260702_separable_headsep_e100_seed42/small_logmel_cnn.csv",
+      "exists": true
+    },
+    {
+      "component": "globalmel_sep_temporal_e100_seed42",
+      "weight": 0.375,
+      "source": "official archive",
+      "path": "investigation/submissions/parallel100_20260702_globalmel_sep_temporal_e100_seed42/small_logmel_cnn.csv",
+      "exists": true
+    },
+    {
+      "component": "sep_temporal_f1024_e100_seed42",
+      "weight": 0.375,
+      "source": "official archive",
+      "path": "investigation/submissions/parallel100_20260702_sep_temporal_f1024_e100_seed42/small_logmel_cnn.csv",
+      "exists": true
+    }
+  ],
+  "validation": {
+    "submission": "proyecto_actual/codigo/submission.csv",
+    "rows": 3361,
+    "columns": 81,
+    "min_probability": 3.113837592425e-11,
+    "max_probability": 0.999998935,
+    "sha256": "4247ab9ff6398fbb1b6af223629d004265e27bb6cbccabf53ec4969a96c61cab",
+    "matches_expected_sha": true,
+    "expected_private_lb": 0.67126
+  },
+  "notes": {
+    "final_model": "3-way e100 weighted",
+    "official_private_lb": 0.67126,
+    "best_experimental_private_lb": 0.67674,
+    "why_not_best_experimental": "usa bagging interno adicional en dos ramas temporales"
+  }
+}

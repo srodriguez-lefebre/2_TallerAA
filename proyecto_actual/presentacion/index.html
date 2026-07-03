@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proyecto 2 - Freesound Audio Tagging</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5c6672;
+      --paper: #f6f5f0;
+      --panel: #ffffff;
+      --line: #d7d7ce;
+      --blue: #2364aa;
+      --green: #2f7d5c;
+      --orange: #c05a28;
+      --red: #a63f3f;
+      --shadow: 0 22px 58px rgba(23, 32, 42, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Aptos", "Segoe UI", Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    .deck-shell {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .toolbar {
+      position: fixed;
+      z-index: 20;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px;
+      border: 1px solid rgba(23, 32, 42, 0.15);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 12px 30px rgba(23, 32, 42, 0.12);
+    }
+
+    .toolbar button {
+      min-width: 42px;
+      height: 38px;
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: transparent;
+      font-size: 20px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover {
+      background: rgba(35, 100, 170, 0.12);
+    }
+
+    .toolbar .primary {
+      color: white;
+      background: var(--blue);
+    }
+
+    .counter {
+      min-width: 64px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .slides {
+      position: relative;
+      width: min(96vw, 1440px);
+      aspect-ratio: 16 / 9;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: hidden;
+      padding: 46px 60px;
+      border: 1px solid rgba(23, 32, 42, 0.13);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .slide.active {
+      display: block;
+    }
+
+    .slide::after {
+      content: attr(data-section);
+      position: absolute;
+      left: 60px;
+      bottom: 23px;
+      color: rgba(23, 32, 42, 0.42);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 980px;
+      margin-bottom: 16px;
+      font-size: clamp(48px, 5.2vw, 78px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin-bottom: 18px;
+      font-size: clamp(34px, 3.2vw, 52px);
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    p,
+    li {
+      color: var(--muted);
+      font-size: clamp(18px, 1.4vw, 23px);
+      line-height: 1.36;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .eyebrow {
+      margin-bottom: 12px;
+      color: var(--orange);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      max-width: 980px;
+      color: var(--muted);
+      font-size: clamp(20px, 1.7vw, 28px);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      height: calc(100% - 120px);
+      margin-top: 18px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfbf8;
+      padding: 20px;
+    }
+
+    .panel.tight {
+      padding: 16px;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .metric {
+      border-top: 5px solid var(--blue);
+      border-radius: 8px;
+      background: #fbfbf8;
+      padding: 18px;
+    }
+
+    .metric.green {
+      border-color: var(--green);
+    }
+
+    .metric.orange {
+      border-color: var(--orange);
+    }
+
+    .metric .value {
+      display: block;
+      color: var(--ink);
+      font-size: clamp(34px, 4vw, 58px);
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .metric .label {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .figure {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+    }
+
+    .figure-wrap {
+      min-height: 0;
+      height: 100%;
+    }
+
+    .formula {
+      display: inline-block;
+      margin-top: 22px;
+      padding: 16px 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f9faf8;
+      color: var(--ink);
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: clamp(22px, 2vw, 32px);
+      font-weight: 800;
+      line-height: 1.28;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .step {
+      min-height: 92px;
+      display: grid;
+      align-content: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfbf8;
+      text-align: center;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .branches {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .branch {
+      min-height: 300px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      background: #fbfbf8;
+    }
+
+    .branch strong {
+      color: var(--blue);
+      font-size: 30px;
+    }
+
+    .tag {
+      display: inline-flex;
+      margin: 0 8px 8px 0;
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: white;
+      background: var(--green);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .small {
+      font-size: 17px;
+    }
+
+    .callout {
+      margin-top: 22px;
+      border-left: 6px solid var(--orange);
+      padding: 14px 18px;
+      background: #fbfbf8;
+      color: var(--ink);
+      font-size: clamp(19px, 1.5vw, 25px);
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    @media (max-width: 820px) {
+      .deck-shell {
+        padding: 8px;
+      }
+
+      .slide {
+        padding: 30px 24px;
+      }
+
+      .slide::after {
+        left: 24px;
+      }
+
+      .grid-2,
+      .grid-3,
+      .branches,
+      .metric-row,
+      .pipeline {
+        grid-template-columns: 1fr;
+      }
+
+      .slides {
+        width: 100vw;
+        height: 100vh;
+        aspect-ratio: auto;
+      }
+
+      body {
+        overflow: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="toolbar" aria-label="Navegacion">
+      <button id="prev" aria-label="Anterior">‹</button>
+      <span class="counter" id="counter">1 / 12</span>
+      <button id="next" class="primary" aria-label="Siguiente">›</button>
+    </div>
+
+    <main class="slides" id="slides">
+      <section class="slide active" data-section="inicio">
+        <p class="eyebrow">Taller de Aprendizaje Automático</p>
+        <h1>Freesound Audio Tagging</h1>
+        <p class="subtitle">Modelo final de tres ramas log-mel, entrenado a 100 épocas y reponderado para la entrega.</p>
+        <div class="metric-row">
+          <div class="metric">
+            <span class="value">80</span>
+            <span class="label">clases de audio</span>
+          </div>
+          <div class="metric green">
+            <span class="value">3</span>
+            <span class="label">ramas complementarias</span>
+          </div>
+          <div class="metric orange">
+            <span class="value">0.67126</span>
+            <span class="label">private LB oficial</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="problema">
+        <p class="eyebrow">Problema</p>
+        <h2>Audio tagging multi-label</h2>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Qué se predice</h3>
+            <ul>
+              <li>Un audio puede contener más de una fuente sonora.</li>
+              <li>La salida son 80 probabilidades por archivo.</li>
+              <li>La métrica premia el ranking de clases correctas.</li>
+            </ul>
+          </div>
+          <div class="figure-wrap">
+            <img class="figure" src="assets/fig_split_sizes.png" alt="Tamaño de splits">
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="datos">
+        <p class="eyebrow">Datos</p>
+        <h2>Curado, ruidoso y desbalance</h2>
+        <div class="grid-2">
+          <div class="figure-wrap">
+            <img class="figure" src="assets/fig_label_frequency.png" alt="Frecuencia de etiquetas">
+          </div>
+          <div class="panel">
+            <h3>Decisión</h3>
+            <ul>
+              <li>Final entrenado sobre <strong>train_curated</strong>.</li>
+              <li><strong>train_noisy</strong> se analizó, pero concatenarlo directo empeoró validación.</li>
+              <li>Se descartaron archivos conocidos como problemáticos.</li>
+            </ul>
+            <div class="callout">El riesgo principal no era solo cantidad de datos: era ruido de etiquetas.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="metrica">
+        <p class="eyebrow">Métrica</p>
+        <h2>lwlrap: ordenar bien las etiquetas</h2>
+        <div class="grid-3">
+          <div class="panel">
+            <h3>Ranking</h3>
+            <p>Para cada audio importan las posiciones donde caen las clases verdaderas.</p>
+          </div>
+          <div class="panel">
+            <h3>Multi-label</h3>
+            <p>Se usan sigmoides independientes y BCE, no softmax excluyente.</p>
+          </div>
+          <div class="panel">
+            <h3>Blend</h3>
+            <p>Promediar probabilidades puede mejorar el ranking si las ramas son complementarias.</p>
+          </div>
+        </div>
+        <div class="callout">La métrica empuja a construir buenos rankings, no solo clases ganadoras.</div>
+      </section>
+
+      <section class="slide" data-section="preprocesamiento">
+        <p class="eyebrow">Preprocesamiento</p>
+        <h2>De forma de onda a imagen log-mel</h2>
+        <div class="grid-2">
+          <div class="figure-wrap">
+            <img class="figure" src="assets/fig_waveform_logmel.png" alt="Waveform a log-mel">
+          </div>
+          <div>
+            <div class="pipeline">
+              <div class="step">WAV</div>
+              <div class="step">mono</div>
+              <div class="step">44.1 kHz</div>
+              <div class="step">Mel</div>
+              <div class="step">log/dB</div>
+              <div class="step">128 x T</div>
+            </div>
+            <p class="small">La CNN ve patrones locales en tiempo y frecuencia: ataques, bandas, ruido broadband y eventos sostenidos.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="representaciones">
+        <p class="eyebrow">Representaciones</p>
+        <h2>El salto grande fue conservar el tiempo</h2>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Escalera conceptual</h3>
+            <ul>
+              <li>P00 stats log-mel: 0.37607</li>
+              <li>P01 imagen 128 x 512: 0.52257</li>
+              <li>Entrenamiento CNN refinado: 0.64665</li>
+              <li>Global-mel y 1024 frames: hasta 0.67025</li>
+            </ul>
+          </div>
+          <div class="figure-wrap">
+            <img class="figure" src="assets/fig_f512_f1024.png" alt="Comparación 512 y 1024 frames">
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="experimentos">
+        <p class="eyebrow">Experimentos</p>
+        <h2>Hipótesis que sí movieron la aguja</h2>
+        <div class="grid-2">
+          <div class="figure-wrap">
+            <img class="figure" src="assets/fig_private_lb_ladder.png" alt="Escalera private leaderboard">
+          </div>
+          <div class="panel">
+            <h3>Lectura</h3>
+            <ul>
+              <li>Tabular sirve como baseline, pero pierde temporalidad.</li>
+              <li>CNN log-mel captura estructura tiempo-frecuencia.</li>
+              <li>Normalización global y BiGRU agregan diversidad.</li>
+              <li>Más complejidad solo entra si se puede defender.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="modelo">
+        <p class="eyebrow">Modelo final</p>
+        <h2>Tres ramas, un blend simple</h2>
+        <div class="branches">
+          <div class="branch">
+            <strong>H100</strong>
+            <p>CNN separable-residual con cabeza densa sobre log-mel 128 x 512.</p>
+            <span class="tag">0.25</span>
+            <p class="small">Patrones locales tiempo-frecuencia.</p>
+          </div>
+          <div class="branch">
+            <strong>G100</strong>
+            <p>CNN separable-residual + BiGRU con normalización global por banda Mel.</p>
+            <span class="tag">0.375</span>
+            <p class="small">Escala estable y evolución temporal.</p>
+          </div>
+          <div class="branch">
+            <strong>F100</strong>
+            <p>CNN separable-residual + BiGRU sobre ventana temporal 1024.</p>
+            <span class="tag">0.375</span>
+            <p class="small">Contexto temporal largo.</p>
+          </div>
+        </div>
+        <div class="formula">0.25 H100 + 0.375 G100 + 0.375 F100</div>
+      </section>
+
+      <section class="slide" data-section="regularizacion">
+        <p class="eyebrow">Entrenamiento</p>
+        <h2>100 épocas con regularización repartida</h2>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Dentro del modelo</h3>
+            <ul>
+              <li>BatchNorm en bloques convolucionales.</li>
+              <li>head_dropout = 0.3 en las tres ramas.</li>
+              <li>BiGRU en las dos ramas temporales.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Durante entrenamiento</h3>
+            <ul>
+              <li>SpecAugment: shift, máscara temporal y frecuencia.</li>
+              <li>AdamW con weight decay en ramas temporales.</li>
+              <li>BCEWithLogitsLoss con pos_weight por clase.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout">No usamos early stopping en la corrida final: el objetivo fue full-train a 100 épocas.</div>
+      </section>
+
+      <section class="slide" data-section="decision">
+        <p class="eyebrow">Selección final</p>
+        <h2>Por qué entregamos 0.67126</h2>
+        <div class="grid-2">
+          <div class="figure-wrap">
+            <img class="figure" src="assets/fig_final_experiments.png" alt="Experimentos finales">
+          </div>
+          <div class="panel">
+            <h3>Decisión</h3>
+            <ul>
+              <li>3-way e100 weighted: <strong>0.67126</strong>.</li>
+              <li>Mejor experimento: <strong>0.67674</strong>.</li>
+              <li>No se elige el mejor score porque agrega bagging interno en ramas temporales.</li>
+            </ul>
+            <div class="callout">Preferimos una entrega más simple, trazable y defendible.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-section="entrega">
+        <p class="eyebrow">Entrega reproducible</p>
+        <h2>Notebook final ejecutable</h2>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Modo liviano</h3>
+            <ul>
+              <li>Recompone el blend oficial.</li>
+              <li>Valida columnas, filas, rango y SHA.</li>
+              <li>Genera <strong>submission.csv</strong>.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Modo pesado</h3>
+            <ul>
+              <li>Reconstruye caches log-mel.</li>
+              <li>Entrena las tres ramas a 100 épocas.</li>
+              <li>Deja modelos y predicciones por componente.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="formula">SHA: 4247ab9f...96c61cab</div>
+      </section>
+
+      <section class="slide" data-section="cierre">
+        <p class="eyebrow">Conclusión</p>
+        <h2>La mejora vino de preservar estructura y sumar diversidad controlada</h2>
+        <div class="grid-3">
+          <div class="panel">
+            <h3>Representación</h3>
+            <p>Log-mel como imagen fue el salto principal.</p>
+          </div>
+          <div class="panel">
+            <h3>Modelo</h3>
+            <p>Tres ramas con sesgos físicos claros.</p>
+          </div>
+          <div class="panel">
+            <h3>Entrega</h3>
+            <p>0.67126, simple y defendible frente al bagging.</p>
+          </div>
+        </div>
+        <div class="callout">Trabajo futuro: usar train_noisy con filtrado, preentrenamiento o fine-tuning progresivo.</div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const counter = document.getElementById("counter");
+    const prev = document.getElementById("prev");
+    const next = document.getElementById("next");
+    let current = 0;
+
+    function show(index) {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => {
+        slide.classList.toggle("active", i === current);
+      });
+      counter.textContent = `${current + 1} / ${slides.length}`;
+    }
+
+    prev.addEventListener("click", () => show(current - 1));
+    next.addEventListener("click", () => show(current + 1));
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") {
+        event.preventDefault();
+        show(current + 1);
+      }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        show(current - 1);
+      }
+      if (event.key === "Home") {
+        show(0);
+      }
+      if (event.key === "End") {
+        show(slides.length - 1);
+      }
+    });
+
+    show(0);
+  </script>
+</body>
+</html>

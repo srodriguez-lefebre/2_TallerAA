@@ -6,6 +6,9 @@ La entrega se organiza como un paquete de 8 carpetas que se puede copiar y leer
 sin depender de todo el laboratorio historico. El laboratorio completo queda en
 `investigation/`; la narrativa de defensa queda en las carpetas numeradas.
 
+La carpeta `proyecto_actual/` concentra la entrega final lista para compartir:
+codigo ejecutable, informe LaTeX/PDF y presentacion HTML.
+
 ## Estructura de entrega
 
 - `01_analisis_datos/`: problema, metrica, splits, clases y primeros chequeos.
