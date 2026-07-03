@@ -83,7 +83,11 @@ python scripts/check_delivery_notebooks_executed.py \
 python 07_final/validate_final_artifacts.py
 ```
 
-`100. Entregable/00_pipeline_entregable.ipynb` no se ejecuta en este entorno.
+`100. Entregable/00_pipeline_entregable.ipynb` fue ejecutado con
+`RUN_HEAVY_STEPS=True` el 2026-07-03. La corrida completo las tres ramas a 100
+epocas y genero un blend valido de formato, pero no bit a bit identico al CSV
+oficial. Por eso se restauro `100. Entregable/submission.csv` al artefacto
+scoreado con SHA `4247ab9ff6398fbb1b6af223629d004265e27bb6cbccabf53ec4969a96c61cab`.
 
 ## Criterio para cambios futuros
 

@@ -5,7 +5,9 @@ Esta carpeta contiene el notebook final de entrega:
 - `00_pipeline_entregable.ipynb`
 
 El notebook queda preparado para reconstruir el CSV final en un entorno seguro.
-No se ejecuta durante esta reorganizacion local.
+El 2026-07-03 se ejecuto una corrida pesada completa con
+`RUN_HEAVY_STEPS=True`; el detalle quedo documentado en
+`reproduction_report_20260703.md`.
 
 ## Modelo final oficial
 
@@ -33,15 +35,19 @@ audios .wav
 -> submission.csv
 ```
 
-Por defecto:
+En la version guardada de la corrida 2026-07-03:
 
 ```python
-RUN_HEAVY_STEPS = False
+RUN_HEAVY_STEPS = True
 ```
 
-Con ese valor, el notebook usa artefactos ya generados. Para reproducir caches y
-entrenamientos desde cero, cambiar el flag a `True` en un entorno preparado para
-entrenamientos largos.
+Con ese valor, el notebook reconstruye caches y entrena desde cero. Si solo se
+quiere recomponer el CSV oficial desde artefactos ya generados, cambiar el flag
+a `False` antes de correrlo.
+
+Nota: una reproduccion pesada puede no ser bit a bit identica al CSV scoreado,
+por detalles no deterministas de entrenamiento GPU. El artefacto de entrega se
+mantiene fijo en el CSV oficial validado por hash y Kaggle.
 
 ## Regularizacion
 
