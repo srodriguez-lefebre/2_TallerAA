@@ -1,0 +1,153 @@
+{
+  "pipeline": {
+    "self_contained_from_raw_data": true,
+    "uses_investigation_artifacts_as_source": false,
+    "run_full_pipeline_flag": false,
+    "work_dir": "proyecto_actual_v2/codigo/work",
+    "pipeline_src": "proyecto_actual_v2/codigo/pipeline_src"
+  },
+  "raw_data_checks": {
+    "sample_rows": 3361,
+    "curated_rows": 4970,
+    "noisy_rows": 19815,
+    "num_labels": 80,
+    "curated_unique_files": 4970,
+    "noisy_unique_files": 19815,
+    "sample_has_fname": true,
+    "curated_has_labels": true,
+    "noisy_has_labels": true
+  },
+  "branch_config": [
+    {
+      "branch": "separable_headsep",
+      "weight": 0.25,
+      "architecture": "separable_residual",
+      "activation": "relu",
+      "frames": 512,
+      "normalization": "clip",
+      "base_epochs": 100,
+      "batch_size": 24,
+      "optimizer": "adam",
+      "scheduler": "multistep",
+      "lr_milestones": "27,36,43,49,52",
+      "head_hidden": 256,
+      "head_dropout": 0.3
+    },
+    {
+      "branch": "globalmel_sep_temporal",
+      "weight": 0.375,
+      "architecture": "separable_temporal_bigru",
+      "activation": "silu",
+      "frames": 512,
+      "normalization": "global-mel",
+      "base_epochs": 100,
+      "batch_size": 24,
+      "optimizer": "adamw",
+      "scheduler": "multistep",
+      "lr_milestones": "25,39",
+      "head_hidden": 0,
+      "head_dropout": 0.3
+    },
+    {
+      "branch": "sep_temporal_f1024",
+      "weight": 0.375,
+      "architecture": "separable_temporal_bigru",
+      "activation": "silu",
+      "frames": 1024,
+      "normalization": "clip",
+      "base_epochs": 100,
+      "batch_size": 12,
+      "optimizer": "adamw",
+      "scheduler": "multistep",
+      "lr_milestones": "19,25",
+      "head_hidden": 0,
+      "head_dropout": 0.3
+    }
+  ],
+  "finetune_config": {
+    "epochs_extra": 30,
+    "learning_rate": 0.0001,
+    "scheduler": "cosine",
+    "min_lr": 1e-06,
+    "batch_composition": "50% curated / 50% noisy",
+    "curated_loss_weight": 1.0,
+    "noisy_loss_weight": 0.3,
+    "gaussian_noise_std": 0.015,
+    "augmentations": [
+      "time shift",
+      "time mask",
+      "frequency mask",
+      "gaussian noise"
+    ],
+    "ensemble_weights": [
+      0.25,
+      0.375,
+      0.375
+    ],
+    "freesound2019_private_lb": 0.68122,
+    "course_public_lb": 0.64307
+  },
+  "submission": {
+    "path": "proyecto_actual_v2/codigo/submission.csv",
+    "rows": 3361,
+    "labels": 80,
+    "min_probability": 1.8894305625e-10,
+    "max_probability": 0.99999625,
+    "sha256": "b29288caa6e7b37b29e830a29655decc7c6bc8110ca3a40b828f4dd2f5fabdcc"
+  },
+  "leaderboard": {
+    "previous_3way_private_lb": 0.67126,
+    "freesound2019_private_lb": 0.68122,
+    "course_public_lb": 0.64307
+  },
+  "planned_steps": [
+    {
+      "step": "logmel_512_clip_curated_test",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/build_logmel_image_cache.py --data-dir /home/santig14/fing/taa/2_TallerAA/data --splits curated,test --n-mels 128 --frames 512 --normalization clip"
+    },
+    {
+      "step": "logmel_512_globalmel_curated_test",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/build_logmel_image_cache.py --data-dir /home/santig14/fing/taa/2_TallerAA/data --splits curated,test --n-mels 128 --frames 512 --normalization global-mel --cache-tag globalmel"
+    },
+    {
+      "step": "logmel_1024_clip_curated_test",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/build_logmel_image_cache.py --data-dir /home/santig14/fing/taa/2_TallerAA/data --splits curated,test --n-mels 128 --frames 1024 --normalization clip"
+    },
+    {
+      "step": "logmel_noisy_512",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/build_noisy_caches.py --data-dir /home/santig14/fing/taa/2_TallerAA/data"
+    },
+    {
+      "step": "logmel_1024_memmap_all",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/build_f1024_memmap_caches.py --data-dir /home/santig14/fing/taa/2_TallerAA/data"
+    },
+    {
+      "step": "train_curated_separable_headsep",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/train_logmel_cnn.py --data-dir /home/santig14/fing/taa/2_TallerAA/data --models-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/models/separable_headsep_e100_seed42 --submissions-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/submissions/separable_headsep_e100_seed42 --experiments-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/experiments/separable_headsep_e100_seed42 --n-mels 128 --frames 512 --epochs 100 --batch-size 24 --lr 0.001 --weight-decay 0.0001 --optimizer adam --initializer he_normal --architecture separable_residual --activation relu --head-hidden 256 --head-dropout 0.3 --block-dropout 0.0 --time-reverse-probability 0.0 --contrast-strength 0.0 --scheduler multistep --lr-milestones 27,36,43,49,52 --min-lr 1e-06 --seed 42 --full-train"
+    },
+    {
+      "step": "train_curated_globalmel_sep_temporal",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/train_logmel_cnn.py --data-dir /home/santig14/fing/taa/2_TallerAA/data --models-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/models/globalmel_sep_temporal_e100_seed42 --submissions-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/submissions/globalmel_sep_temporal_e100_seed42 --experiments-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/experiments/globalmel_sep_temporal_e100_seed42 --n-mels 128 --frames 512 --epochs 100 --batch-size 24 --lr 0.001 --weight-decay 0.0001 --optimizer adamw --initializer he_normal --architecture separable_temporal_bigru --activation silu --head-hidden 0 --head-dropout 0.3 --block-dropout 0.0 --time-reverse-probability 0.0 --contrast-strength 0.0 --scheduler multistep --lr-milestones 25,39 --min-lr 1e-06 --seed 42 --full-train --cache-tag globalmel"
+    },
+    {
+      "step": "train_curated_sep_temporal_f1024",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/train_logmel_cnn.py --data-dir /home/santig14/fing/taa/2_TallerAA/data --models-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/models/sep_temporal_f1024_e100_seed42 --submissions-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/submissions/sep_temporal_f1024_e100_seed42 --experiments-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work/experiments/sep_temporal_f1024_e100_seed42 --n-mels 128 --frames 1024 --epochs 100 --batch-size 12 --lr 0.001 --weight-decay 0.0001 --optimizer adamw --initializer he_normal --architecture separable_temporal_bigru --activation silu --head-hidden 0 --head-dropout 0.3 --block-dropout 0.0 --time-reverse-probability 0.0 --contrast-strength 0.0 --scheduler multistep --lr-milestones 19,25 --min-lr 1e-06 --seed 42 --full-train"
+    },
+    {
+      "step": "finetune_curated_noisy",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/finetune_mixed_noisy.py --data-dir /home/santig14/fing/taa/2_TallerAA/data --work-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work --branches all --epochs 30 --lr 0.0001 --min-lr 1e-06 --noisy-loss-weight 0.3 --curated-loss-weight 1.0 --gaussian-noise-std 0.015 --seed 42 --num-workers 2 --submission-checkpoint final"
+    },
+    {
+      "step": "blend_final_submission",
+      "command": "/home/santig14/fing/taa/2_TallerAA/.venv/bin/python /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/pipeline_src/evaluate_and_blend.py --data-dir /home/santig14/fing/taa/2_TallerAA/data --work-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo/work --output-dir /home/santig14/fing/taa/2_TallerAA/proyecto_actual_v2/codigo"
+    }
+  ],
+  "figures": [
+    "fig_v2_branch_local.png",
+    "fig_v2_component_weights.png",
+    "fig_v2_kaggle_scores.png",
+    "fig_v2_largo_component_weights.png",
+    "fig_v2_largo_split_sizes.png",
+    "fig_v2_split_sizes.png"
+  ]
+}

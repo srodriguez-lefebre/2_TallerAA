@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proyecto 2 v2 - Freesound Audio Tagging</title>
+  <style>
+    :root {
+      --ink: #172026;
+      --muted: #5f6b73;
+      --line: #d7dde2;
+      --bg: #f7f8f4;
+      --green: #2f7f6f;
+      --blue: #315c99;
+      --gold: #d28b35;
+      --paper: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+      letter-spacing: 0;
+    }
+    .deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 46px 58px 42px;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .slide.active {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+    h1, h2 {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+    h1 { font-size: 54px; max-width: 980px; }
+    h2 { font-size: 39px; max-width: 980px; }
+    .tag {
+      color: var(--muted);
+      font-size: 18px;
+      margin-top: 12px;
+      max-width: 860px;
+      line-height: 1.4;
+    }
+    .num {
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      color: var(--blue);
+    }
+    main {
+      min-height: 0;
+      display: grid;
+      gap: 26px;
+      align-items: center;
+    }
+    .cols-2 { grid-template-columns: 1.03fr 0.97fr; }
+    .cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: 0 8px 24px rgba(23, 32, 38, 0.06);
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .metric {
+      border-left: 5px solid var(--green);
+      padding: 12px 14px;
+      background: #fff;
+    }
+    .metric:nth-child(2) { border-color: var(--blue); }
+    .metric:nth-child(3) { border-color: var(--gold); }
+    .metric .value {
+      font-size: 40px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric .label {
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.3;
+    }
+    ul {
+      margin: 0;
+      padding-left: 22px;
+      font-size: 24px;
+      line-height: 1.46;
+    }
+    li + li { margin-top: 12px; }
+    .small-list {
+      font-size: 20px;
+      line-height: 1.45;
+    }
+    .figure {
+      width: 100%;
+      max-height: 58vh;
+      object-fit: contain;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .step {
+      min-height: 138px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 17px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .step b { font-size: 21px; }
+    .step span { color: var(--muted); line-height: 1.35; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 21px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      padding: 13px 14px;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 800; }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 15px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+    .progress {
+      height: 7px;
+      width: 220px;
+      background: #e5e9ec;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+    }
+    .controls {
+      position: fixed;
+      right: 22px;
+      bottom: 18px;
+      display: flex;
+      gap: 8px;
+      z-index: 5;
+    }
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      width: 42px;
+      height: 38px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .deck { height: auto; min-height: 100vh; }
+      .slide { padding: 30px 22px 70px; min-height: 100vh; }
+      .cols-2, .cols-3, .metric-grid, .flow { grid-template-columns: 1fr; }
+      h1 { font-size: 38px; }
+      h2 { font-size: 30px; }
+      ul { font-size: 20px; }
+      .metric .value { font-size: 32px; }
+      .figure { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <section class="slide active">
+      <header>
+        <div>
+          <p class="eyebrow">Taller de Aprendizaje Automático</p>
+          <h1>Freesound Audio Tagging v2</h1>
+          <p class="tag">El punto final pasa a ser el ensamble 3-way con fine-tuning controlado sobre noisy.</p>
+        </div>
+        <div class="num">0.68122</div>
+      </header>
+      <main class="cols-2">
+        <div class="metric-grid">
+          <div class="metric"><div class="value">0.68122</div><div class="label">Freesound 2019 private</div></div>
+          <div class="metric"><div class="value">0.64307</div><div class="label">Kaggle del curso public</div></div>
+          <div class="metric"><div class="value">+0.00996</div><div class="label">contra 3-way e100 previo</div></div>
+        </div>
+        <img class="figure" src="assets/fig_v2_kaggle_scores.png" alt="Scores Kaggle">
+      </main>
+      <footer><span>Proyecto 2</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Problema</p><h2>Clasificación multi-label de audio</h2></div></header>
+      <main class="cols-2">
+        <ul>
+          <li>Cada audio puede tener más de una fuente sonora.</li>
+          <li>El modelo entrega 80 probabilidades independientes.</li>
+          <li>La métrica lwlrap evalúa ranking de etiquetas correctas.</li>
+          <li>El ensamble ayuda cuando las ramas ordenan bien clases distintas.</li>
+        </ul>
+        <img class="figure" src="assets/fig_waveform_logmel.png" alt="Waveform a log-mel">
+      </main>
+      <footer><span>Datos y métrica</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Datos</p><h2>Curated confiable, noisy grande</h2></div></header>
+      <main class="cols-2">
+        <img class="figure" src="assets/fig_v2_split_sizes.png" alt="Tamaños de splits">
+        <table>
+          <tr><th>Split</th><th>Rol</th></tr>
+          <tr><td>train_curated</td><td>Etiquetas confiables para aprender la base.</td></tr>
+          <tr><td>train_noisy</td><td>Más cobertura, pero confianza parcial.</td></tr>
+          <tr><td>test</td><td>3361 audios para submission.</td></tr>
+        </table>
+      </main>
+      <footer><span>Dataset</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Representación</p><h2>WAV a imagen log-mel</h2></div></header>
+      <main>
+        <div class="flow">
+          <div class="step"><b>WAV</b><span>Audio mono a 44.1 kHz</span></div>
+          <div class="step"><b>Mel</b><span>128 bandas perceptuales</span></div>
+          <div class="step"><b>Log/dB</b><span>Escala más estable</span></div>
+          <div class="step"><b>Frames</b><span>512 o 1024 pasos temporales</span></div>
+          <div class="step"><b>CNN</b><span>Patrones tiempo-frecuencia</span></div>
+        </div>
+      </main>
+      <footer><span>Preprocesamiento</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Modelo base</p><h2>3 ramas complementarias</h2></div></header>
+      <main class="cols-2">
+        <ul>
+          <li><b>H100:</b> separable-residual, cabeza densa, 512 frames.</li>
+          <li><b>G100:</b> global-mel, cabeza temporal BiGRU, 512 frames.</li>
+          <li><b>F100:</b> cabeza temporal BiGRU, 1024 frames.</li>
+          <li>El ensamble anterior había llegado a <span class="num">0.67126</span>.</li>
+        </ul>
+        <img class="figure" src="assets/fig_v2_component_weights.png" alt="Pesos del ensamble">
+      </main>
+      <footer><span>3-way e100</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Hipótesis final</p><h2>Noisy sirve si no domina</h2></div></header>
+      <main>
+        <div class="flow">
+          <div class="step"><b>Inicio</b><span>Checkpoints e100 curated</span></div>
+          <div class="step"><b>Mezcla</b><span>Batches 50% curated, 50% noisy</span></div>
+          <div class="step"><b>Confianza</b><span>Noisy pesa 0.30 en la pérdida</span></div>
+          <div class="step"><b>LR bajo</b><span>1e-4 con scheduler coseno</span></div>
+          <div class="step"><b>30 épocas</b><span>Continuación conservadora</span></div>
+        </div>
+      </main>
+      <footer><span>Noisy fine-tune</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Augmentation</p><h2>Variabilidad sin cambiar etiquetas</h2></div></header>
+      <main class="cols-2">
+        <ul>
+          <li>Time shift para robustez temporal.</li>
+          <li>Time mask y frequency mask como SpecAugment liviano.</li>
+          <li>Gaussian noise en el tensor log-mel.</li>
+          <li>Pos weights calculados desde curated train.</li>
+        </ul>
+        <div class="panel">
+          <h2 style="font-size:32px;margin-bottom:14px;">Idea defendible</h2>
+          <p class="tag">El conjunto noisy entra como fuente de cobertura y regularización, no como verdad con el mismo peso que curated.</p>
+        </div>
+      </main>
+      <footer><span>Regularización</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Control local</p><h2>La validación local no decide el final</h2></div></header>
+      <main class="cols-2">
+        <img class="figure" src="assets/fig_v2_branch_local.png" alt="Control local por rama">
+        <ul class="small-list">
+          <li>Los checkpoints base fueron entrenados con full curated.</li>
+          <li>El split local sirve como control de degradación.</li>
+          <li>La decisión final sale del leaderboard.</li>
+          <li>El score Kaggle confirma mejora real.</li>
+        </ul>
+      </main>
+      <footer><span>Validación</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Resultados</p><h2>Nuevo mejor punto del historial</h2></div></header>
+      <main>
+        <table>
+          <tr><th>Referencia</th><th>Score</th><th>Lectura</th></tr>
+          <tr><td>3-way e100 anterior</td><td class="num">0.67126</td><td>punto final previo</td></tr>
+          <tr><td>Mejor variante previa</td><td class="num">0.67674</td><td>bagging más complejo</td></tr>
+          <tr><td>Noisy fine-tune Freesound 2019</td><td class="num">0.68122</td><td>nuevo mejor score</td></tr>
+          <tr><td>Noisy fine-tune Kaggle curso</td><td class="num">0.64307</td><td>variante de datos del curso</td></tr>
+        </table>
+      </main>
+      <footer><span>Leaderboard</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+
+    <section class="slide">
+      <header><div><p class="eyebrow">Entrega</p><h2>Artefacto final validado</h2></div></header>
+      <main class="cols-2">
+        <ul>
+          <li>CSV final con 3361 filas y 80 labels.</li>
+          <li>Columnas y fname iguales a sample_submission.</li>
+          <li>Sin NaN, probabilidades en [0, 1].</li>
+          <li>SHA256: <span class="num">b29288c...</span></li>
+        </ul>
+        <div class="panel">
+          <h2 style="font-size:34px;margin-bottom:12px;">Mensaje final</h2>
+          <p class="tag">Primero aprender de curated. Luego usar noisy con confianza parcial. Esa política mejora sin perder claridad conceptual.</p>
+        </div>
+      </main>
+      <footer><span>Validación final</span><div class="progress"><div class="bar"></div></div><span class="counter"></span></footer>
+    </section>
+  </div>
+
+  <div class="controls">
+    <button type="button" aria-label="Anterior" onclick="go(-1)">‹</button>
+    <button type="button" aria-label="Siguiente" onclick="go(1)">›</button>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    let current = 0;
+    function show(index) {
+      current = Math.max(0, Math.min(slides.length - 1, index));
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === current);
+        const bar = slide.querySelector('.bar');
+        const counter = slide.querySelector('.counter');
+        if (bar) bar.style.width = `${((current + 1) / slides.length) * 100}%`;
+        if (counter) counter.textContent = `${current + 1}/${slides.length}`;
+      });
+    }
+    function go(delta) { show(current + delta); }
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight' || event.key === ' ') go(1);
+      if (event.key === 'ArrowLeft') go(-1);
+      if (event.key === 'Home') show(0);
+      if (event.key === 'End') show(slides.length - 1);
+    });
+    show(0);
+  </script>
+</body>
+</html>
+

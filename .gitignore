@@ -130,6 +130,9 @@ desktop.ini
 *.fdb_latexmk
 *.fls
 *.out
+*.wav
+
+data_course/
 
 # Entregable final versionable
 !100. Entregable/submission.csv
@@ -137,3 +140,6 @@ desktop.ini
 !proyecto_actual/codigo/submission.csv
 !proyecto_actual/codigo/pipeline_final_taller_2_metadata.json
 !proyecto_actual/informe/informe.pdf
+!proyecto_actual_v2/codigo/submission.csv
+!proyecto_actual_v2/codigo/pipeline_final_taller_2_v2_metadata.json
+!proyecto_actual_v2/informe/informe.pdf

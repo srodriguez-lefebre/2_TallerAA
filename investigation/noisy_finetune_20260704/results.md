@@ -37,3 +37,19 @@ Resultado Kaggle:
 | Date | Description | Status | Public | Private |
 |---|---|---|---:|---:|
 | 2026-07-04 13:42:32 | noisy_finetune_20260704 final 3-way | COMPLETE | 0.00000 | 0.68122 |
+
+## Kaggle del curso
+
+Referencia tomada del leaderboard de `TAA 2026 - Freesound Audio Tagging`.
+Corresponde a una variante del dataset del curso, por lo que se debe reportar
+separada del Kaggle publico `freesound-audio-tagging-2019` y no compararla como
+si fuera exactamente la misma competencia.
+
+| Leaderboard | Team | Entries | Score | Last |
+|---|---|---:|---:|---|
+| Public | Santiago Rodriguez | 1 | 0.64307 | 26m |
+
+Lectura: el mismo CSV candidato tambien queda como referencia fuerte en el
+Kaggle del curso, con score publico `0.64307`. Para la defensa conviene mostrar
+ambos valores: `0.68122` como score privado en Freesound 2019 y `0.64307` como
+referencia del curso sobre su variante de datos.
