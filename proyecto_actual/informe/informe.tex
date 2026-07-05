@@ -361,11 +361,12 @@ entrega se ejecuta rápido usando los artefactos oficiales ya generados, lo que
 facilita verificar la submission sin exigir una GPU.
 
 \subsection{Lectura de predicciones de validación}
-Para interpretar valoraciones del clasificador se revisaron ejemplos de un
-holdout de la rama separable-temporal. La Tabla~\ref{tab:interpretacion} muestra
-dos casos: uno donde las clases verdaderas aparecen arriba del ranking y otro
-donde el modelo confunde el evento con fuentes acústicamente cercanas o
-espurias.
+Para interpretar las salidas se revisaron ejemplos del ensamble final con
+fine-tuning sobre \texttt{train\_curated + train\_noisy}. Estos casos provienen
+del split local usado como control de degradación: no son una validación
+independiente, porque los checkpoints base fueron entrenados con todo
+\texttt{train\_curated}, pero sirven para inspeccionar si el ranking de clases
+del modelo final es coherente.
 
 \begin{table}[H]
 \centering
@@ -374,17 +375,25 @@ espurias.
 \toprule
 Audio & Etiquetas reales & Top-5 predicho & Lectura \\
 \midrule
-\texttt{dabca820.wav} & Applause, Crowd, Cheering &
-Applause 0.998; Cheering 0.988; Crowd 0.981; Clapping 0.056; Frying 0.023 &
-ranking correcto: las tres etiquetas reales quedan primeras y con alta
-confianza \\
-\texttt{765a95d3.wav} & Car passing by, Traffic noise &
-Motorcycle 0.908; Revving 0.854; Microwave 0.448; Race car 0.270; Bus 0.128 &
-error interpretable: activa clases de motores y tránsito, pero no las etiquetas
-exactas esperadas \\
+\texttt{cce07823.wav} &
+Fill (with liquid), Gurgling, Sink, Water tap &
+Fill 0.993; Water tap 0.980; Sink 0.977; Gurgling 0.976; Trickle 0.968 &
+las cuatro etiquetas reales quedan arriba; la clase extra también es de agua \\
+\texttt{38b700ca.wav} &
+Applause, Cheering, Crowd &
+Applause 1.000; Crowd 0.999; Cheering 0.999; Harmonica 0.073; Run 0.036 &
+ranking correcto y muy concentrado en el evento de público \\
+\texttt{a61153d2.wav} &
+Acoustic guitar, Strum &
+Acoustic guitar 1.000; Strum 1.000; Bass guitar 0.020; Electric guitar 0.005; Gong 0.003 &
+identifica instrumento y acción; los falsos positivos son instrumentos cercanos \\
+\texttt{c197ef4f.wav} &
+Bicycle bell &
+Bicycle bell 1.000; Glockenspiel 0.180; Chink/clink 0.067; Microwave 0.029; Shatter 0.023 &
+top-1 correcto; las alternativas son sonidos metálicos breves, acústicamente plausibles \\
 \bottomrule
 \end{tabularx}
-\caption{Ejemplos de interpretación de scores en validación.}
+\caption{Ejemplos de interpretación del ensamble final con noisy fine-tune.}
 \label{tab:interpretacion}
 \end{table}
 

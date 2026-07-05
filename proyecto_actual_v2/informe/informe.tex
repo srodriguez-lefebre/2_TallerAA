@@ -167,12 +167,23 @@ La Figura anterior no se interpreta como estimación real del leaderboard, porqu
 los modelos base ya habían visto todo \texttt{train\_curated}. Sirve para
 detectar degradaciones grandes; la decisión final se toma con Kaggle.
 
-\section{Resultados}
+\section{Resultado del flujo final}
+El resultado que se entrega no corresponde al modelo 3-way e100 aislado, sino al
+flujo completo de dos etapas: primero se entrenan las tres ramas sobre
+\texttt{train\_curated} durante 100 épocas y luego se continúa cada una con
+\texttt{train\_curated + train\_noisy} usando batches balanceados, menor
+learning rate, augmentations y peso reducido para las etiquetas ruidosas. La
+submission final se obtiene promediando las tres ramas fine-tuned con los mismos
+pesos del ensamble base:
+\[
+0.25\,H_{\mathrm{ft}} + 0.375\,G_{\mathrm{ft}} + 0.375\,F_{\mathrm{ft}}.
+\]
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.80\textwidth]{img/fig_v2_kaggle_scores.png}
-\caption{Scores relevantes. El Kaggle del curso usa una variante del dataset y
-se reporta separado.}
+\caption{Scores relevantes del flujo final. El Kaggle del curso usa una variante
+del dataset y se reporta separado.}
 \end{figure}
 
 \begin{table}[H]
@@ -180,18 +191,19 @@ se reporta separado.}
 \small
 \begin{tabular}{@{}lrr@{}}
 \toprule
-Referencia & Score & Lectura \\
+Sistema & Score & Lectura \\
 \midrule
-3-way e100 anterior & 0.67126 & punto final previo \\
+3-way e100 sin noisy & 0.67126 & punto de partida \\
 Mejor variante previa registrada & 0.67674 & bagging, más compleja \\
-Noisy fine-tune Freesound 2019 private & \textbf{0.68122} & nuevo mejor público del historial \\
-Noisy fine-tune Kaggle del curso public & \textbf{0.64307} & referencia en variante de datos del curso \\
+Flujo final completo, Freesound 2019 private & \textbf{0.68122} & modelo entregado \\
+Flujo final completo, Kaggle del curso public & \textbf{0.64307} & referencia en variante de datos del curso \\
 \bottomrule
 \end{tabular}
-\caption{Resultados principales.}
+\caption{Resultados principales. El modelo entregado es la versión fine-tuned,
+no el checkpoint e100 previo.}
 \end{table}
 
-La mejora contra el punto final anterior es:
+La mejora contra el 3-way e100 sin la segunda etapa es:
 \[
 0.68122 - 0.67126 = 0.00996.
 \]
@@ -199,12 +211,54 @@ Contra la mejor variante previa registrada:
 \[
 0.68122 - 0.67674 = 0.00448.
 \]
-El CSV final tiene 3361 filas, 80 columnas de etiquetas, probabilidades en
-\([0,1]\), mismo orden de \texttt{fname} que \texttt{sample\_submission.csv} y
-hash SHA256:
+El CSV final tiene 3361 filas y 80 columnas de etiquetas. Las probabilidades
+quedan en \([0,1]\), el orden de \texttt{fname} coincide con
+\texttt{sample\_submission.csv} y el hash SHA256 es:
 \begin{center}
 \small\texttt{b29288caa6e7b37b29e830a29655decc7c6bc8110ca3a40b828f4dd2f5fabdcc}
 \end{center}
+
+Además se preparó el código de entrega como pipeline reproducible: el notebook
+parte de los datos crudos, reconstruye las representaciones log-mel, entrena las
+ramas base, ejecuta la continuación con noisy y vuelve a generar el ensamble.
+También se incluye una versión larga del notebook con el código fuente embebido,
+pensada para auditoría o defensa.
+
+\subsection{Lectura de predicciones del modelo final}
+Para inspeccionar cualitativamente el comportamiento del ensamble final se
+revisaron ejemplos del split local usado durante el fine-tuning con noisy. Esta
+lectura no se toma como validación independiente, porque los checkpoints base ya
+habían sido entrenados con todo \texttt{train\_curated}; su valor es mostrar si
+el ranking de clases del modelo final resulta interpretable.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabularx}{\textwidth}{@{}lX X X@{}}
+\toprule
+Audio & Etiquetas reales & Top-5 predicho & Lectura \\
+\midrule
+\texttt{cce07823.wav} &
+Fill (with liquid), Gurgling, Sink, Water tap &
+Fill 0.993; Water tap 0.980; Sink 0.977; Gurgling 0.976; Trickle 0.968 &
+las cuatro etiquetas reales quedan arriba; la clase extra también es de agua \\
+\texttt{38b700ca.wav} &
+Applause, Cheering, Crowd &
+Applause 1.000; Crowd 0.999; Cheering 0.999; Harmonica 0.073; Run 0.036 &
+ranking correcto y muy concentrado en el evento de público \\
+\texttt{a61153d2.wav} &
+Acoustic guitar, Strum &
+Acoustic guitar 1.000; Strum 1.000; Bass guitar 0.020; Electric guitar 0.005; Gong 0.003 &
+identifica instrumento y acción; los falsos positivos son instrumentos cercanos \\
+\texttt{c197ef4f.wav} &
+Bicycle bell &
+Bicycle bell 1.000; Glockenspiel 0.180; Chink/clink 0.067; Microwave 0.029; Shatter 0.023 &
+top-1 correcto; las alternativas son sonidos metálicos breves, acústicamente plausibles \\
+\bottomrule
+\end{tabularx}
+\caption{Ejemplos de interpretación del ensamble final con noisy fine-tune.}
+\label{tab:interpretacion-final}
+\end{table}
 
 \section{Conclusión}
 La contribución final no fue cambiar la arquitectura, sino cambiar el protocolo
@@ -217,4 +271,3 @@ no se descartó ni se incorporó ingenuamente: se incorporó con una política
 explícita de confianza parcial.
 
 \end{document}
-
